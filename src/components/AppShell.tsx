@@ -3,6 +3,7 @@ import { Home, Search, PlusCircle, Users, User, Bell, Leaf, Info, Building2, Shi
 import { useEffect, type ReactNode } from "react";
 import { useStore, type Role } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const s = useStore();
