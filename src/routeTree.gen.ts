@@ -14,6 +14,7 @@ import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as CorporateRouteImport } from './routes/corporate'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ImpactRouteImport } from './routes/impact'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModeratorRouteImport } from './routes/moderator'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -48,6 +49,11 @@ const HowItWorksRoute = HowItWorksRouteImport.update({
 const ImpactRoute = ImpactRouteImport.update({
   id: '/impact',
   path: '/impact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModeratorRoute = ModeratorRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
+  '/login': typeof LoginRoute
   '/moderator': typeof ModeratorRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
+  '/login': typeof LoginRoute
   '/moderator': typeof ModeratorRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
+  '/login': typeof LoginRoute
   '/moderator': typeof ModeratorRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/corporate'
     | '/how-it-works'
     | '/impact'
+    | '/login'
     | '/moderator'
     | '/notifications'
     | '/onboarding'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/corporate'
     | '/how-it-works'
     | '/impact'
+    | '/login'
     | '/moderator'
     | '/notifications'
     | '/onboarding'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/corporate'
     | '/how-it-works'
     | '/impact'
+    | '/login'
     | '/moderator'
     | '/notifications'
     | '/onboarding'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   CorporateRoute: typeof CorporateRoute
   HowItWorksRoute: typeof HowItWorksRoute
   ImpactRoute: typeof ImpactRoute
+  LoginRoute: typeof LoginRoute
   ModeratorRoute: typeof ModeratorRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/impact'
       fullPath: '/impact'
       preLoaderRoute: typeof ImpactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/moderator': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   CorporateRoute: CorporateRoute,
   HowItWorksRoute: HowItWorksRoute,
   ImpactRoute: ImpactRoute,
+  LoginRoute: LoginRoute,
   ModeratorRoute: ModeratorRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
