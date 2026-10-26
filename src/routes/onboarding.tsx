@@ -24,7 +24,7 @@ function Onboarding() {
     { icon: "🛡️", th: "ความเป็นส่วนตัวมาก่อน", en: "Privacy first", sub: { th: "ใช้นามสมมติ ปิดบังข้อมูลส่วนตัวอัตโนมัติ ไม่เปิดเผยที่อยู่หรือเลขบัญชี", en: "Pseudonyms, auto‑redaction, never public addresses or account numbers." } },
     { icon: "🌱", th: "ทุกบาทมีความหมาย", en: "Every baht counts", sub: { th: "เริ่มต้นเพียง ฿20 ดูผลกระทบที่คุณสร้างได้ในรอยเท้าการให้", en: "Start from ฿20 and watch your impact grow in your footprint." } },
   ];
-  const cur = steps[step];
+  const cur = steps[step]!;
   const finish = (role: "helper" | "requester") => {
     s.set((x) => ({ ...x, onboarded: true, role }));
     nav({ to: role === "helper" ? "/" : "/requests/new" });

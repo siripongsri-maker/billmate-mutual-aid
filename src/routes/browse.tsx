@@ -6,9 +6,9 @@ import { bills, categories, type Category } from "@/lib/data";
 import { BillCard, Btn, Empty, PageHeader } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
-type Search = { cat?: Category };
+type Search = { cat?: Category | undefined };
 export const Route = createFileRoute("/browse")({
-  validateSearch: (s: Record<string, unknown>): Search => ({ cat: categories.some((c) => c.id === s.cat) ? (s.cat as Category) : undefined }),
+  validateSearch: (s: Record<string, unknown>): Search => ({ cat: categories.some((c) => c.id === s["cat"]) ? (s["cat"] as Category) : undefined }),
   head: () => ({ meta: [
     { title: "Browse bills — billmate" },
     { name: "description", content: "Search and filter community bills on billmate (demo)." },
