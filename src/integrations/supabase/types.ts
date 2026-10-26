@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          detail: Json
+          id: number
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: never
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: never
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           amount: number | null
@@ -56,12 +86,57 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          contact: string | null
+          created_at: string
+          display_name: string | null
+          role: string
+          suspended_until: string | null
+          user_id: string
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          display_name?: string | null
+          role?: string
+          suspended_until?: string | null
+          user_id: string
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          display_name?: string | null
+          role?: string
+          suspended_until?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
