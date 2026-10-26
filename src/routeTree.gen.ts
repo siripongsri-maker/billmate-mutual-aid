@@ -10,14 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as CorporateRouteImport } from './routes/corporate'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ImpactRouteImport } from './routes/impact'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModeratorRouteImport } from './routes/moderator'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminLogRouteImport } from './routes/admin.log'
+import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
+import { Route as AdminTeamRouteImport } from './routes/admin.team'
 import { Route as BillsIdRouteImport } from './routes/bills.$id'
 import { Route as CirclesIndexRouteImport } from './routes/circles.index'
 import { Route as CirclesIdRouteImport } from './routes/circles.$id'
@@ -28,6 +34,11 @@ import { Route as BillsIdContributeRouteImport } from './routes/bills.$id_.contr
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrowseRoute = BrowseRouteImport.update({
@@ -50,6 +61,11 @@ const ImpactRoute = ImpactRouteImport.update({
   path: '/impact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModeratorRoute = ModeratorRouteImport.update({
   id: '/moderator',
   path: '/moderator',
@@ -69,6 +85,26 @@ const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLogRoute = AdminLogRouteImport.update({
+  id: '/log',
+  path: '/log',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMessagesRoute = AdminMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTeamRoute = AdminTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminRoute,
 } as any)
 const BillsIdRoute = BillsIdRouteImport.update({
   id: '/bills/$id',
@@ -103,17 +139,23 @@ const BillsIdContributeRoute = BillsIdContributeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
+  '/login': typeof LoginRoute
   '/moderator': typeof ModeratorRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/admin/log': typeof AdminLogRoute
+  '/admin/messages': typeof AdminMessagesRoute
+  '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
@@ -124,13 +166,18 @@ export interface FileRoutesByTo {
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
+  '/login': typeof LoginRoute
   '/moderator': typeof ModeratorRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/admin/log': typeof AdminLogRoute
+  '/admin/messages': typeof AdminMessagesRoute
+  '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/admin': typeof AdminIndexRoute
   '/circles': typeof CirclesIndexRoute
   '/requests': typeof RequestsIndexRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
@@ -138,17 +185,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
+  '/login': typeof LoginRoute
   '/moderator': typeof ModeratorRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/admin/log': typeof AdminLogRoute
+  '/admin/messages': typeof AdminMessagesRoute
+  '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/bills/$id_/contribute': typeof BillsIdContributeRoute
@@ -157,17 +210,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/browse'
     | '/corporate'
     | '/how-it-works'
     | '/impact'
+    | '/login'
     | '/moderator'
     | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/admin/log'
+    | '/admin/messages'
+    | '/admin/team'
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/admin/'
     | '/circles/'
     | '/requests/'
     | '/bills/$id/contribute'
@@ -178,30 +237,41 @@ export interface FileRouteTypes {
     | '/corporate'
     | '/how-it-works'
     | '/impact'
+    | '/login'
     | '/moderator'
     | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/admin/log'
+    | '/admin/messages'
+    | '/admin/team'
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/admin'
     | '/circles'
     | '/requests'
     | '/bills/$id/contribute'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/browse'
     | '/corporate'
     | '/how-it-works'
     | '/impact'
+    | '/login'
     | '/moderator'
     | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/admin/log'
+    | '/admin/messages'
+    | '/admin/team'
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/admin/'
     | '/circles/'
     | '/requests/'
     | '/bills/$id_/contribute'
@@ -209,10 +279,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   BrowseRoute: typeof BrowseRoute
   CorporateRoute: typeof CorporateRoute
   HowItWorksRoute: typeof HowItWorksRoute
   ImpactRoute: typeof ImpactRoute
+  LoginRoute: typeof LoginRoute
   ModeratorRoute: typeof ModeratorRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -232,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/browse': {
@@ -262,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImpactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/moderator': {
       id: '/moderator'
       path: '/moderator'
@@ -289,6 +375,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/log': {
+      id: '/admin/log'
+      path: '/log'
+      fullPath: '/admin/log'
+      preLoaderRoute: typeof AdminLogRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/messages': {
+      id: '/admin/messages'
+      path: '/messages'
+      fullPath: '/admin/messages'
+      preLoaderRoute: typeof AdminMessagesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/team': {
+      id: '/admin/team'
+      path: '/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AdminTeamRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/bills/$id': {
       id: '/bills/$id'
@@ -335,12 +449,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminLogRoute: typeof AdminLogRoute
+  AdminMessagesRoute: typeof AdminMessagesRoute
+  AdminTeamRoute: typeof AdminTeamRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminLogRoute: AdminLogRoute,
+  AdminMessagesRoute: AdminMessagesRoute,
+  AdminTeamRoute: AdminTeamRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   BrowseRoute: BrowseRoute,
   CorporateRoute: CorporateRoute,
   HowItWorksRoute: HowItWorksRoute,
   ImpactRoute: ImpactRoute,
+  LoginRoute: LoginRoute,
   ModeratorRoute: ModeratorRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
