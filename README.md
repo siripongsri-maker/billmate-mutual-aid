@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# BillMate Mutual Aid
+
+Build BILLMATE, a beautiful mobile-first Thai/English interactive mutual aid bill-sharing prototype, fully navigable responsive web app. Brand: billmate. tagline 'Life happens. We help.' Warm inclusive contemporary fintech aesthetic, cream background, forest teal #087F70, coral accents, rounded cards, Thai-friendly typography. Default Thai with EN toggle. Screens: onboarding 3 steps; home dashboard with impact stats and featured verified bills; browse/search/filter bills; bill detail with progress and giver story; simulated contribute flow select amount 20/50/100/custom, confirmation and mock success impact receipt (NO actual payments); request help multi-step form with category, amount, due date, story, simulated document upload and privacy redaction preview, review, submit pending verification; my requests statuses; circles discovery, circle detail and join; footprint/impact; notifications; profile/settings/privacy; trust/how it works; corporate matching page; moderator dashboard with pending verification queue, approve/reject demo actions, dispute flags, metrics. Use realistic but clearly fictional sample data in THB. Role switch demo between helper, requester, moderator; persist local demo state if practical. Ensure navigation and buttons actually work, with back and empty/error states. Strong privacy: no actual ID docs, no real payments, no public addresses/account details, no promises that OCR proves authenticity. All sample verification badges clearly demo. Accessible high contrast, elegant microinteractions, mobile bottom navigation and desktop sidebar. Build polished working prototype, not just landing page. Include a visible DEMO banner and avoid any real fundraising or payment collection.
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/0062d2d3-24a7-4a7e-8758-de368b750d3c).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
