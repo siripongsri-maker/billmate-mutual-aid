@@ -51,10 +51,10 @@
   const saved = load();
   const state = {
     pledges: Array.isArray(saved.pledges) ? saved.pledges : [],
-    favorites: new Set(Array.isArray(saved.favorites) ? saved.favorites : []),
+    favorites: new Set(Array.isArray(saved.favorites) ? saved.favorites : []), bank: typeof saved.bank === 'string' ? saved.bank : '',
     amounts: {}, filter: 'all', search: ''
   };
-  const persist = () => {try {localStorage.setItem(STORE, JSON.stringify({pledges:state.pledges, favorites:[...state.favorites]}));} catch {}};
+  const persist = () => {try {localStorage.setItem(STORE, JSON.stringify({pledges:state.pledges, favorites:[...state.favorites], bank:state.bank}));} catch {}};
 
   const app = document.querySelector('#app');
   const dialog = document.querySelector('#support-dialog');
@@ -93,23 +93,42 @@
   }
   const qrRef = v => String(v || '').replace(/[^0-9A-Za-z]/g, '').toUpperCase();
   function billQrPayload(p, amount) {
-    const ref1 = qrRef(p.ref1 || p.ref), ref2 = qrRef(p.ref2);
+    // Some banks want the refs in a different order for QR than the bill's barcode uses.
+    const ref1 = qrRef(p.qrRef1 || p.ref1 || p.ref), ref2 = qrRef('qrRef1' in p ? p.qrRef2 : p.ref2);
     const merchant = tlv('00', 'A000000677010112') + tlv('01', p.billerId) + tlv('02', ref1) + (ref2 ? tlv('03', ref2) : '');
     const body = tlv('00', '01') + tlv('01', '12') + tlv('30', merchant) + tlv('53', '764') + tlv('54', Number(amount).toFixed(2)) + tlv('58', 'TH') + '6304';
     return body + crc16(body);
   }
-  const hasBillQr = p => /^\d{15}$/.test(String(p.billerId || '')) && qrRef(p.ref1 || p.ref).length > 0 && typeof window.qrcode === 'function';
+  const hasBiller = p => /^\d{15}$/.test(String(p.billerId || '')) && qrRef(p.ref1 || p.ref).length > 0;
+  const hasBillQr = p => hasBiller(p) && typeof window.qrcode === 'function';
+  const hasBillBarcode = p => hasBiller(p) && typeof window.JsBarcode === 'function';
+  // The bank bill-payment barcode printed on Thai bills: |BillerID CR Ref1 CR Ref2 CR amount-in-satang (Code 128).
+  const billBarcodePayload = (p, amount) => ['|' + p.billerId, qrRef(p.ref1 || p.ref), qrRef(p.ref2), String(Math.round(amount * 100))].join('\r');
+  function labelled(source, label) {
+    const font = Math.max(22, Math.round(source.width / 26));
+    const canvas = document.createElement('canvas'); canvas.width = source.width; canvas.height = source.height + font * 3;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(source, 0, 0);
+    ctx.fillStyle = '#1d3b2c'; ctx.textAlign = 'center'; ctx.font = `600 ${font}px "Noto Sans Thai", sans-serif`;
+    ctx.fillText(label, canvas.width / 2, source.height + font * 1.6);
+    return canvas.toDataURL('image/png');
+  }
+  function billBarcodeImage(b, amount) {
+    const bars = document.createElement('canvas');
+    window.JsBarcode(bars, billBarcodePayload(b.pay, amount), {format:'CODE128', displayValue:false, width:3, height:420, margin:40, background:'#ffffff', lineColor:'#000000'});
+    return labelled(bars, `คนละนิด · ${b.pay.provider || ''} · ${money(amount)}`);
+  }
+  const BANKS = [['kbank', 'กสิกรไทย'], ['scb', 'ไทยพาณิชย์'], ['bbl', 'กรุงเทพ'], ['ktb', 'กรุงไทย'], ['ttb', 'ttb'], ['bay', 'กรุงศรี'], ['gsb', 'ออมสิน'], ['other', 'ธนาคารอื่น']];
   function billQrImage(b, amount) {
     const qr = window.qrcode(0, 'M'); qr.addData(billQrPayload(b.pay, amount)); qr.make();
     const cells = qr.getModuleCount(), cell = 8, quiet = 4 * cell, size = cells * cell + quiet * 2;
-    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size + 64;
+    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#1d3b2c';
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size); ctx.fillStyle = '#1d3b2c';
     for (let r = 0; r < cells; r++) for (let c = 0; c < cells; c++) if (qr.isDark(r, c)) ctx.fillRect(quiet + c * cell, quiet + r * cell, cell, cell);
-    ctx.textAlign = 'center'; ctx.font = '600 22px "Noto Sans Thai", sans-serif';
-    ctx.fillText(`คนละนิด · ${b.pay.provider || ''} · ${money(amount)}`, size / 2, size + 30);
-    return canvas.toDataURL('image/png');
+    return labelled(canvas, `คนละนิด · ${b.pay.provider || ''} · ${money(amount)}`);
   }
+
 
   function hydrateIcons(root = document) {
     root.querySelectorAll('[data-icon]').forEach(el => {el.innerHTML = icon(el.dataset.icon);});
@@ -228,7 +247,7 @@
     const amount = state.amounts[b.id];
     if (!amount || amountError(b, amount)) return help(b, amount ? amountError(b, amount) : '');
     const p = b.pay;
-    if (!p.private && hasBillQr(p)) return payByQr(b, amount);
+    if (!p.private && (hasBillQr(p) || hasBillBarcode(p))) return payByScan(b, amount);
     return `<section class="view review-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)}</p></div><div class="help-form form-card">
       <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${p.private ? 'ขอจากทีมทางแชต' : safe(p.ref || '-')}${p.ref && !p.private ? ` <button class="icon-button small-icon" data-copy="${safe(String(p.ref).replace(/[^0-9A-Za-z]/g, ''))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
       ${p.private ? `<div class="support-note">${icon('lock')}<p>เพื่อความเป็นส่วนตัวของผู้ขอ ทีมจะส่ง${safe(p.refLabel || 'เลขสำหรับจ่าย')}ให้ทางแชต</p></div>${contactButton(`ขอ${safe(p.refLabel || 'เลขสำหรับจ่าย')}ทาง ${safe(contact?.label)}`, 'outline')}` : ''}
@@ -238,17 +257,29 @@
       <button class="button coral full" data-paid="${b.id}">${contact ? `จ่ายแล้ว ส่งสลิปให้ทีม` : 'จ่ายแล้ว'} ${icon('check')}</button>
       <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p></div></div></section>`;
   }
-  function payByQr(b, amount) {
-    const p = b.pay, image = billQrImage(b, amount);
+  function payByScan(b, amount) {
+    const p = b.pay, bank = state.bank, tested = p.banks || {};
+    const method = !bank ? '' : ['qr', 'barcode', 'manual'].includes(tested[bank]) ? tested[bank] : 'try';
     const manual = `<div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${safe(p.ref || '-')} <button class="icon-button small-icon" data-copy="${safe(qrRef(p.ref))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button></b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}`;
+    const scan = kind => {
+      const isQr = kind === 'qr', name = isQr ? 'QR' : 'บาร์โค้ด', image = isQr ? billQrImage(b, amount) : billBarcodeImage(b, amount);
+      return `<figure class="pay-qr-card${isQr ? '' : ' is-barcode'}"><img class="pay-qr" src="${image}" alt="${name}จ่ายบิล ${safe(p.provider)} ยอด ${money(amount)}"><figcaption>${safe(b.title)}</figcaption></figure>
+        <a class="button primary full" href="${image}" download="konlanid-${safe(b.id)}-${Number(amount).toFixed(2)}${isQr ? '' : '-barcode'}.png">บันทึก${name} ${icon('arrow')}</a>
+        <ol class="pay-steps qr-steps"><li><b>บันทึก${name}ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูปจากอัลบั้ม แอปจะกรอกเลขและยอดให้เอง</span></li><li><b>ตรวจว่าผู้รับเงินเป็น ${safe(p.payee || p.provider)} ยอด ${money(amount)}</b><span>แล้วกดยืนยัน เก็บสลิปไว้${contact ? 'ส่งให้ทีม' : ''}</span></li></ol>
+        <p class="small-text">อยู่บนคอมพิวเตอร์? ใช้แอปธนาคารในมือถือสแกนจากจอได้เลย</p>`;
+    };
+    const fallback = (summary, body) => `<details class="faq"><summary>${summary} ${icon('chevron')}</summary>${body}</details>`;
+    let panel = '';
+    if (method === 'qr') panel = scan('qr') + fallback('สแกนไม่ได้? กรอกเลขเอง', manual);
+    else if (method === 'barcode') panel = scan('barcode') + fallback('สแกนไม่ได้? กรอกเลขเอง', manual);
+    else if (method === 'manual') panel = `<p class="muted">แอปนี้ยังสแกนจ่ายบิลนี้ไม่ได้ กรอกเลขเองตามนี้</p>${manual}`;
+    else if (method === 'try') panel = (hasBillBarcode(p) ? scan('barcode') : '') + (hasBillQr(p) ? fallback('สแกนบาร์โค้ดไม่ได้? ลอง QR', scan('qr')) : '') + fallback('สแกนไม่ได้ทั้งคู่? กรอกเลขเอง', manual);
+    const chips = `<div class="filters bank-picker" role="group" aria-label="ธนาคารที่คุณใช้">${BANKS.map(([id, name]) => `<button class="filter${bank === id ? ' active' : ''}" data-bank="${id}" aria-pressed="${bank === id}">${name}</button>`).join('')}</div>`;
     return `<section class="view review-view pay-qr-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-form form-card">
-      <figure class="pay-qr-card"><img class="pay-qr" src="${image}" alt="QR จ่ายบิล ${safe(p.provider)} ยอด ${money(amount)}" width="300" height="340"><figcaption>${safe(b.title)}</figcaption></figure>
-      <a class="button primary full" href="${image}" download="konlanid-${safe(b.id)}-${Number(amount).toFixed(2)}.png">บันทึก QR ${icon('arrow')}</a>
-      <ol class="pay-steps qr-steps"><li><b>บันทึก QR ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูป QR จากอัลบั้ม แอปจะกรอกเบอร์และยอดให้เอง</span></li><li><b>ตรวจว่าผู้รับเงินเป็น ${safe(p.payee || p.provider)} ยอด ${money(amount)}</b><span>แล้วกดยืนยัน เก็บสลิปไว้${contact ? 'ส่งให้ทีม' : ''}</span></li></ol>
-      <p class="small-text">อยู่บนคอมพิวเตอร์? สแกน QR นี้ด้วยแอปธนาคารในมือถือได้เลย</p>
-      <details class="faq"><summary>ไม่สะดวกสแกน? กรอกเลขเอง ${icon('chevron')}</summary>${manual}</details>
-      <button class="button coral full" data-paid="${b.id}">${contact ? 'จ่ายแล้ว ส่งสลิปให้ทีม' : 'จ่ายแล้ว'} ${icon('check')}</button>
-      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p></div></div></section>`;
+      <h2>ใช้แอปธนาคารไหน</h2>${chips}
+      <div class="pay-panel">${panel || '<p class="muted">เลือกธนาคารที่คุณใช้ แล้วเราจะบอกวิธีที่ง่ายที่สุด</p>'}</div>
+      ${method ? `<button class="button coral full" data-paid="${b.id}">${contact ? 'จ่ายแล้ว ส่งสลิปให้ทีม' : 'จ่ายแล้ว'} ${icon('check')}</button>
+      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p>` : ''}</div></div></section>`;
   }
   function closedView(b) {
     return `<section class="view">${topbar('บิลนี้ไม่ต้องช่วยเพิ่มแล้ว', {back:`#/bill/${b.id}`})}<div class="empty-state">${icon(b.status === 'paid' ? 'check' : 'clock')}<h2>${b.status === 'paid' ? 'จ่ายครบแล้ว ขอบคุณทุกแรงช่วย' : 'ครบยอดหรือปิดรับแล้ว'}</h2><p>ลองดูบิลอื่นที่ยังรอเราอยู่ได้เลย</p><a class="button primary" href="#/bills">ดูบิลที่รอเรา</a></div></section>`;
@@ -331,6 +362,7 @@
     if (target.matches('[data-copy]')) {copyText(target.dataset.copy, 'คัดลอกเลขแล้ว ไปวางในแอปธนาคารได้เลย'); return;}
     if (target.matches('[data-report]')) {reportModal(); return;}
     if (target.matches('[data-favorites]')) {favoritesModal(); return;}
+    if (target.matches('[data-bank]')) {state.bank = target.dataset.bank; persist(); const y = window.scrollY; render({focus:false}); window.scrollTo({top:y, behavior:'instant'}); return;}
     if (target.matches('[data-filter]')) {
       state.filter = target.dataset.filter;
       document.querySelectorAll('[data-filter]').forEach(el => {const on = el === target; el.classList.toggle('active', on); el.setAttribute('aria-pressed', String(on));});
