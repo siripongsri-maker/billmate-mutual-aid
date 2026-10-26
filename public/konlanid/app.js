@@ -27,6 +27,8 @@
     pin: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
     phone: '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>',
+    bookmark: '<path d="M6 3h12v18l-6-4.5L6 21V3Z"/>',
+    download: '<path d="M12 3v12m-5-5 5 5 5-5M4 20h16"/>',
     copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
     chat: '<path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-5.6A8 8 0 1 1 21 12Z"/><path d="M8 11h8M8 14.5h5"/>',
     send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>',
@@ -38,12 +40,15 @@
   const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const typeIcon = {electricity:'bolt', water:'drop', phone:'phone', car:'car', credit:'card'};
 
-  // Bills and the contact channel come from data.js, which the team edits by hand.
+  // Bills and the backend connection come from data.js, which the team edits by hand.
   const config = window.KONLANID || {};
-  const contact = config.contact && config.contact.url ? config.contact : null;
-  // Only bills the team confirmed can be paid in parts are listed.
-  const bills = (config.bills || []).filter(b => b && b.id && b.title && b.goal > 0 && b.splittable === true).map(b => ({raised:0, helpers:0, status:'open', pay:{}, ...b}));
+  const backend = config.backend && config.backend.url && config.backend.key ? config.backend : null;
   const OVERDUE_LIMIT_DAYS = 30;
+  const RECEIPT_DAYS = 7;
+  const digits = v => String(v || '').replace(/\D/g, '');
+  // Helpers transfer to the requester's own PromptPay: a mobile number (10 digits), national/tax ID (13) or e-wallet (15).
+  const validPromptPay = v => [10, 13, 15].includes(digits(v).length);
+  const bills = (config.bills || []).filter(b => b && b.id && b.title && b.goal > 0 && b.pay && validPromptPay(b.pay.promptpay)).map(b => ({raised:0, helpers:0, status:'open', ...b}));
 
   // What this browser has pledged. Kept on this device only; the public totals come from data.js.
   const STORE = 'konlanid:v1';
@@ -51,10 +56,10 @@
   const saved = load();
   const state = {
     pledges: Array.isArray(saved.pledges) ? saved.pledges : [],
-    favorites: new Set(Array.isArray(saved.favorites) ? saved.favorites : []), bank: typeof saved.bank === 'string' ? saved.bank : '',
-    amounts: {}, filter: 'all', search: ''
+    favorites: new Set(Array.isArray(saved.favorites) ? saved.favorites : []),
+    amounts: {}, filter: 'all', search: '', sending: false
   };
-  const persist = () => {try {localStorage.setItem(STORE, JSON.stringify({pledges:state.pledges, favorites:[...state.favorites], bank:state.bank}));} catch {}};
+  const persist = () => {try {localStorage.setItem(STORE, JSON.stringify({pledges:state.pledges, favorites:[...state.favorites]}));} catch {}};
 
   const app = document.querySelector('#app');
   const dialog = document.querySelector('#support-dialog');
@@ -71,6 +76,7 @@
   const tooOverdue = b => daysLeft(b) !== null && daysLeft(b) < 1 - OVERDUE_LIMIT_DAYS;
   const isOpen = b => b.status === 'open' && missing(b) > 0 && !tooOverdue(b);
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
+  const params = () => new URLSearchParams((location.hash.split('?')[1]) || '');
   const dueText = b => {
     const days = daysLeft(b);
     if (days === null) return '';
@@ -80,8 +86,9 @@
     const d = new Date(`${b.dueDate}T12:00:00+07:00`);
     return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'numeric'});
   };
+  const contactLink = (topic, b, amount) => `#/contact?topic=${topic}${b ? `&bill=${encodeURIComponent(b.id)}` : ''}${amount ? `&amount=${amount}` : ''}`;
 
-  // Thai QR Payment, bill payment (EMVCo tag 30): any Thai bank app fills in biller, reference and amount.
+  // Thai QR Payment for PromptPay (EMVCo tag 29) with the amount filled in; every Thai bank app can scan it.
   const tlv = (id, value) => `${id}${String(value.length).padStart(2, '0')}${value}`;
   function crc16(text) {
     let crc = 0xFFFF;
@@ -91,44 +98,24 @@
     }
     return crc.toString(16).toUpperCase().padStart(4, '0');
   }
-  const qrRef = v => String(v || '').replace(/[^0-9A-Za-z]/g, '').toUpperCase();
-  function billQrPayload(p, amount) {
-    // Some banks want the refs in a different order for QR than the bill's barcode uses.
-    const ref1 = qrRef(p.qrRef1 || p.ref1 || p.ref), ref2 = qrRef('qrRef1' in p ? p.qrRef2 : p.ref2);
-    const merchant = tlv('00', 'A000000677010112') + tlv('01', p.billerId) + tlv('02', ref1) + (ref2 ? tlv('03', ref2) : '');
-    const body = tlv('00', '01') + tlv('01', '12') + tlv('30', merchant) + tlv('53', '764') + tlv('54', Number(amount).toFixed(2)) + tlv('58', 'TH') + '6304';
+  function promptPayPayload(id, amount) {
+    const d = digits(id);
+    const target = d.length === 10 ? tlv('01', `0066${d.slice(1)}`) : d.length === 13 ? tlv('02', d) : tlv('03', d);
+    const body = tlv('00', '01') + tlv('01', '12') + tlv('29', tlv('00', 'A000000677010111') + target) + tlv('53', '764') + tlv('54', Number(amount).toFixed(2)) + tlv('58', 'TH') + '6304';
     return body + crc16(body);
   }
-  const hasBiller = p => /^\d{15}$/.test(String(p.billerId || '')) && qrRef(p.ref1 || p.ref).length > 0;
-  const hasBillQr = p => hasBiller(p) && typeof window.qrcode === 'function';
-  const hasBillBarcode = p => hasBiller(p) && typeof window.JsBarcode === 'function';
-  // The bank bill-payment barcode printed on Thai bills: |BillerID CR Ref1 CR Ref2 CR amount-in-satang (Code 128).
-  const billBarcodePayload = (p, amount) => ['|' + p.billerId, qrRef(p.ref1 || p.ref), qrRef(p.ref2), String(Math.round(amount * 100))].join('\r');
-  function labelled(source, label) {
-    const font = Math.max(22, Math.round(source.width / 26));
-    const canvas = document.createElement('canvas'); canvas.width = source.width; canvas.height = source.height + font * 3;
+  const maskPromptPay = id => {const d = digits(id); return d.length === 10 ? `${d.slice(0, 3)}-xxx-${d.slice(6)}` : `${'x'.repeat(d.length - 4)}${d.slice(-4)}`;};
+  function promptPayImage(b, amount) {
+    const qr = window.qrcode(0, 'M'); qr.addData(promptPayPayload(b.pay.promptpay, amount)); qr.make();
+    const cells = qr.getModuleCount(), cell = 8, quiet = 4 * cell, size = cells * cell + quiet * 2, font = 24;
+    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size + font * 3;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(source, 0, 0);
-    ctx.fillStyle = '#1d3b2c'; ctx.textAlign = 'center'; ctx.font = `600 ${font}px "Noto Sans Thai", sans-serif`;
-    ctx.fillText(label, canvas.width / 2, source.height + font * 1.6);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#1d3b2c';
+    for (let r = 0; r < cells; r++) for (let c = 0; c < cells; c++) if (qr.isDark(r, c)) ctx.fillRect(quiet + c * cell, quiet + r * cell, cell, cell);
+    ctx.textAlign = 'center'; ctx.font = `600 ${font}px "Noto Sans Thai", sans-serif`;
+    ctx.fillText(`คนละนิด · พร้อมเพย์ · ${money(amount)}`, size / 2, size + font * 1.6);
     return canvas.toDataURL('image/png');
   }
-  function billBarcodeImage(b, amount) {
-    const bars = document.createElement('canvas');
-    window.JsBarcode(bars, billBarcodePayload(b.pay, amount), {format:'CODE128', displayValue:false, width:3, height:420, margin:40, background:'#ffffff', lineColor:'#000000'});
-    return labelled(bars, `คนละนิด · ${b.pay.provider || ''} · ${money(amount)}`);
-  }
-  const BANKS = [['kbank', 'กสิกรไทย'], ['scb', 'ไทยพาณิชย์'], ['bbl', 'กรุงเทพ'], ['ktb', 'กรุงไทย'], ['ttb', 'ttb'], ['bay', 'กรุงศรี'], ['gsb', 'ออมสิน'], ['other', 'ธนาคารอื่น']];
-  function billQrImage(b, amount) {
-    const qr = window.qrcode(0, 'M'); qr.addData(billQrPayload(b.pay, amount)); qr.make();
-    const cells = qr.getModuleCount(), cell = 8, quiet = 4 * cell, size = cells * cell + quiet * 2;
-    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size); ctx.fillStyle = '#1d3b2c';
-    for (let r = 0; r < cells; r++) for (let c = 0; c < cells; c++) if (qr.isDark(r, c)) ctx.fillRect(quiet + c * cell, quiet + r * cell, cell, cell);
-    return labelled(canvas, `คนละนิด · ${b.pay.provider || ''} · ${money(amount)}`);
-  }
-
 
   function hydrateIcons(root = document) {
     root.querySelectorAll('[data-icon]').forEach(el => {el.innerHTML = icon(el.dataset.icon);});
@@ -145,7 +132,7 @@
   }
   async function shareLink(bill) {
     const url = location.href.split('#')[0] + (bill ? `#/bill/${bill.id}` : '');
-    const text = bill ? `ช่วยกันคนละนิด ${bill.title} ยังขาดอีก ${money(missing(bill))}` : 'ไม่ต้องมีมาก แค่ช่วยกันคนละนิด ก็แบ่งเบาบิลของใครอีกคนได้';
+    const text = bill ? `ช่วยกันคนละนิด ${bill.title} ขาดอีก ${money(missing(bill))}` : 'ไม่ต้องมีมาก แค่ช่วยกันคนละนิด ก็แบ่งเบาบิลของใครอีกคนได้';
     try {
       if (navigator.share) {await navigator.share({title:'คนละนิด', text, url}); return;}
       await navigator.clipboard.writeText(`${text} ${url}`); toast('คัดลอกลิงก์แล้ว ส่งต่อให้เพื่อนได้เลย');
@@ -153,9 +140,6 @@
       if (error && error.name === 'AbortError') return;
       openSupport(`<div class="modal-body"><h2 class="modal-title">ส่งลิงก์นี้ให้เพื่อนได้เลย</h2><p class="muted">${safe(text)}</p><input class="input" readonly value="${safe(url)}" aria-label="ลิงก์คนละนิด" onfocus="this.select()"><button class="button primary full" data-close>เรียบร้อย</button></div>`, 'บอกต่อคนละนิด');
     }
-  }
-  function contactButton(label, cls = 'primary') {
-    return contact ? `<a class="button ${cls} full" href="${safe(contact.url)}" target="_blank" rel="noopener noreferrer">${icon('chat')} ${label}</a>` : '';
   }
   function go(path) {
     if (route() === path) {render(); return;}
@@ -168,42 +152,50 @@
     return `<a class="back-link" href="${href}">${icon('back')}<span>${label}</span></a>`;
   }
   function statusPill(b) {
-    if (b.status === 'paid') return `<span class="status-pill paid">${icon('check')}จ่ายครบแล้ว</span>`;
+    if (b.status === 'paid') return `<span class="status-pill paid">${icon('check')}จ่ายบิลแล้ว</span>`;
     if (b.status === 'closed') return `<span class="status-pill paused">${icon('clock')}ปิดรับแล้ว</span>`;
     if (tooOverdue(b)) return `<span class="status-pill paused">${icon('clock')}ค้างเกิน 1 เดือน · ปิดรับ</span>`;
-    if (!missing(b)) return `<span class="status-pill pending">${icon('clock')}ครบยอด · รอทีมยืนยัน</span>`;
-    return b.verified ? `<span class="status-pill verified">${icon('check')}ทีมตรวจบิลแล้ว</span>` : '';
+    if (!missing(b)) return `<span class="status-pill pending">${icon('clock')}ครบยอด · รอใบเสร็จ</span>`;
+    return b.verified ? `<span class="status-pill verified">${icon('check')}ทีมตรวจตัวตนและบิลแล้ว</span>` : '';
   }
   function progress(b) {
     return `<div class="progress" role="progressbar" aria-label="ยอดที่ช่วยแล้วของ${safe(b.title)}" aria-valuemin="0" aria-valuemax="${b.goal}" aria-valuenow="${b.raised}"><span style="transform:scaleX(${Math.min(1, b.raised / b.goal)})"></span></div>`;
   }
+  function balance(b, extra = '') {
+    const gap = missing(b);
+    const line = gap ? `<b class="amount-main"><small>ขาดอีก</small> ${money(gap)}</b> <span class="balance-sub">· ช่วยแล้ว ${money(b.raised)} จาก ${money(b.goal)}</span>` : `<b class="amount-main"><small>ครบยอด</small> ${money(b.goal)}</b>`;
+    return `<p class="balance-line">${line}</p>${progress(b)}<p class="bill-meta">${b.helpers} คนร่วมช่วย${extra ? ` · ${extra}` : ''}</p>`;
+  }
   function categoryIcon(b) {
     return `<span class="category-icon ${safe(b.type)}">${icon(typeIcon[b.type] || 'file')}</span>`;
   }
+  function saveButton(b, cls = '') {
+    const fav = state.favorites.has(b.id);
+    return `<button class="icon-button ${cls}${fav ? ' is-saved' : ''}" data-save="${b.id}" aria-pressed="${fav}" aria-label="${fav ? 'ยกเลิกเก็บ' : 'เก็บ'}${safe(b.title)}">${icon('bookmark')}</button>`;
+  }
   function billCard(b) {
-    const gap = missing(b), fav = state.favorites.has(b.id);
     return `<article class="bill-card">
-      <div class="bill-card-top">${categoryIcon(b)}<div class="bill-card-heading"><a href="#/bill/${b.id}" class="bill-card-title">${safe(b.title)}</a><p class="bill-meta">โดย ${safe(b.alias)}${b.region ? `<br>${safe(b.region)}` : ''}</p></div><button class="icon-button bill-save${fav ? ' is-saved' : ''}" data-save="${b.id}" aria-pressed="${fav}" aria-label="${fav ? 'ยกเลิกเก็บ' : 'เก็บ'}${safe(b.title)}">${icon('heart')}</button></div>
-      <div class="bill-stats"><div><span class="amount-main">${money(gap)}</span><span class="amount-target"> / ${money(b.goal)}</span><p class="bill-meta">ยอดที่ยังขาด / ยอดบิล</p></div><span class="bill-meta">${isOpen(b) ? dueText(b) : ''}</span></div>
-      ${progress(b)}
-      <div class="bill-card-bottom"><div><p class="bill-meta">ช่วยแล้ว <b>${money(b.raised)}</b> (${b.helpers} คน)</p>${statusPill(b)}${isOpen(b) ? `<span class="status-pill split">แยกจ่ายได้</span>` : ''}</div><a class="button coral bill-card-action" href="#/bill/${b.id}">${isOpen(b) ? 'ช่วยอีกนิด' : 'ดูบิล'} ${icon('arrow')}</a></div>
+      <div class="bill-card-top">${categoryIcon(b)}<div class="bill-card-heading"><a href="#/bill/${b.id}" class="bill-card-title">${safe(b.title)}</a><p class="bill-meta">โดย ${safe(b.alias)}${b.region ? `<br>${safe(b.region)}` : ''}</p></div>${saveButton(b, 'bill-save')}</div>
+      ${balance(b, isOpen(b) ? dueText(b) : '')}
+      <div class="bill-card-bottom"><div>${statusPill(b)}</div><a class="button coral bill-card-action" href="#/bill/${b.id}">${isOpen(b) ? 'ช่วยอีกนิด' : 'ดูบิล'} ${icon('arrow')}</a></div>
     </article>`;
   }
-  function noBills(text = 'ตอนนี้ยังไม่มีบิลที่เปิดรับ') {
-    return `<div class="empty-state soft-empty">${icon('heart')}<h2>${text}</h2><p>ทีมกำลังตรวจบิลก่อนเปิดรับ<br>แวะกลับมาดูใหม่เร็ว ๆ นี้นะ</p><button class="button soft" data-share>บอกต่อคนละนิด ${icon('megaphone')}</button></div>`;
+  function noBills() {
+    return `<div class="empty-state soft-empty">${icon('heart')}<h2>ตอนนี้ยังไม่มีบิลที่เปิดรับ</h2><p>ทีมกำลังเตรียมเปิดรับบิลแรก<br>ถ้าคุณหรือคนที่รู้จักติดขัดเรื่องบิล ส่งเรื่องมาได้เลย</p><a class="button primary" href="${contactLink('ask_help')}">ส่งเรื่องถึงทีม ${icon('arrow')}</a><button class="button soft" data-share>บอกต่อคนละนิด ${icon('megaphone')}</button></div>`;
   }
   function home() {
     const open = bills.filter(isOpen);
+    const cta = open.length ? `<a class="button primary hero-cta" href="#/bills">ช่วยจ่ายคนละนิด ${icon('arrow')}</a>` : `<p class="home-status">${icon('clock')} ตอนนี้ยังไม่มีบิลที่เปิดรับ</p><a class="button primary hero-cta" href="${contactLink('ask_help')}">ส่งเรื่องถึงทีม ${icon('arrow')}</a>`;
     return `<section class="view home-view">
-      <div class="home-layout"><div class="home-hero"><h1 class="view-title home-title" tabindex="-1">วันนี้<br>ช่วยกันคนละนิดไหม?</h1><p class="home-description">ไม่ต้องมีมาก ไม่ต้องรู้จักกัน<br>แค่คนละนิดก็ช่วยให้ใครอีกคนไปต่อได้</p><img class="home-art" src="assets/helping-hand.webp" width="720" height="480" alt="ภาพวาดมือประคองหัวใจ สื่อถึงการแบ่งปัน" fetchpriority="high"><a class="button primary hero-cta" href="#/bills">ช่วยจ่ายคนละนิด ${icon('arrow')}</a>
+      <div class="home-layout"><div class="home-hero"><h1 class="view-title home-title" tabindex="-1">วันนี้<br>ช่วยกันคนละนิดไหม?</h1><p class="home-description">ไม่ต้องมีมาก ไม่ต้องรู้จักกัน<br>แค่คนละนิดก็ช่วยให้ใครอีกคนไปต่อได้</p><img class="home-art" src="assets/helping-hand.webp" width="720" height="480" alt="ภาพวาดมือประคองหัวใจ สื่อถึงการแบ่งปัน" fetchpriority="high">${cta}
       <div class="quick-actions"><a class="quick-action" href="#/bills"><span class="quick-icon pink">${icon('heart')}</span><span>ช่วยจ่าย<br>คนละนิด</span></a><a class="quick-action" href="#/request"><span class="quick-icon yellow">${icon('send')}</span><span>ส่งต่อ<br>คนละนิด</span></a><button class="quick-action" data-share><span class="quick-icon coral">${icon('megaphone')}</span><span>บอกต่อ<br>คนละนิด</span></button><a class="quick-action" href="#/activity"><span class="quick-icon mint">${icon('users')}</span><span>รวมกัน<br>คนละนิด</span></a></div></div>
-      <div class="home-bills"><div class="section-label"><h2>บิลที่รอเรา</h2>${open.length ? `<a class="text-link" href="#/bills">ดูทั้งหมด ${icon('chevron')}</a>` : ''}</div>${open.length ? `<div class="bill-list">${open.slice(0, 2).map(billCard).join('')}</div>` : noBills()}</div></div>
+      ${open.length ? `<div class="home-bills"><div class="section-label"><h2>บิลที่รอเรา</h2><a class="text-link" href="#/bills">ดูทั้งหมด ${icon('chevron')}</a></div><div class="bill-list">${open.slice(0, 2).map(billCard).join('')}</div></div>` : ''}</div>
       <div class="value-banner"><span class="value-symbol">${icon('leaf')}</span><div><h2>คนละนิด ไม่ใช่จำนวนเงิน</h2><p>แต่คือสิ่งที่เราทำให้กันได้ · ให้เท่าที่ไหว ไม่มีภาระต้องตอบแทน</p></div></div>
     </section>`;
   }
   function browse() {
     const types = [...new Map(bills.map(b => [b.type, b.label])).entries()];
-    return `<section class="view browse-view">${topbar('บิลที่รอเรา', {action:`<a class="icon-button" href="#/request" aria-label="ขอความช่วยเหลือ">${icon('plus')}</a>`})}${bills.length ? `<div class="browse-toolbar"><label class="search-field" for="bill-search">${icon('search')}<input class="input" id="bill-search" type="search" placeholder="ค้นหาบิล เช่น ค่าไฟ ค่าน้ำ" value="${safe(state.search)}" autocomplete="off" aria-label="ค้นหาบิล"></label>${types.length > 1 ? `<div class="filters" role="group" aria-label="ประเภทบิล">${[['all', 'ทั้งหมด'], ...types].map(([id, label]) => `<button class="filter${state.filter === id ? ' active' : ''}" data-filter="${safe(id)}" aria-pressed="${state.filter === id}">${safe(label)}</button>`).join('')}</div>` : ''}</div><p class="small-text list-context">ทุกบิลแยกจ่ายได้ · ค้างไม่เกิน 1 เดือน · เริ่มที่ ฿20</p><div id="bills-results" class="bill-list browse-list" aria-live="polite">${browseCards()}</div>` : noBills()}</section>`;
+    return `<section class="view browse-view">${topbar('บิลที่รอเรา')}${bills.length ? `<div class="browse-toolbar"><label class="search-field" for="bill-search">${icon('search')}<input class="input" id="bill-search" type="search" placeholder="ค้นหาบิล เช่น ค่าไฟ ค่าน้ำ" value="${safe(state.search)}" autocomplete="off" aria-label="ค้นหาบิล"></label>${types.length > 1 ? `<div class="filters" role="group" aria-label="ประเภทบิล">${[['all', 'ทั้งหมด'], ...types].map(([id, label]) => `<button class="filter${state.filter === id ? ' active' : ''}" data-filter="${safe(id)}" aria-pressed="${state.filter === id}">${safe(label)}</button>`).join('')}</div>` : ''}</div><p class="small-text list-context">ทุกบิลทีมตรวจตัวตนและบิลแล้ว · ค้างไม่เกิน 1 เดือน · เริ่มที่ ฿20</p><div id="bills-results" class="bill-list browse-list" aria-live="polite">${browseCards()}</div>` : noBills()}</section>`;
   }
   function browseCards() {
     const search = state.search.trim().toLocaleLowerCase('th');
@@ -211,26 +203,24 @@
     shown.sort((a, b) => Number(isOpen(b)) - Number(isOpen(a)));
     return shown.length ? shown.map(billCard).join('') : `<div class="empty-state">${icon('search')}<h2>ยังไม่พบบิลที่ค้นหา</h2><p>ลองใช้คำสั้น ๆ หรือเลือกดูทุกประเภท</p><button class="button soft" data-clear-search>ดูบิลทั้งหมด</button></div>`;
   }
-  function howItWorks(b) {
-    return `<ol class="pay-steps"><li><b>เลือกยอดที่สบายใจ</b><span>เริ่มที่ ฿20 ไม่เกินยอดที่ยังขาด</span></li><li><b>จ่ายตรงเข้าบิล</b><span>ผ่านแอปธนาคารไปที่ ${safe(b.pay.provider || 'ผู้ให้บริการ')} เงินไม่ผ่านบัญชีผู้ขอหรือทีม</span></li><li><b>${contact ? 'ส่งสลิปให้ทีม' : 'ทีมเช็กยอดให้'}</b><span>${contact ? 'ทีมตรวจแล้วอัปเดตยอดบนหน้านี้' : 'ทีมเช็กยอดกับผู้ให้บริการ แล้วอัปเดตบนหน้านี้'}</span></li></ol>`;
+  function howItWorks() {
+    return `<ol class="pay-steps"><li><b>เลือกยอดที่สบายใจ</b><span>เริ่มที่ ฿20 ไม่เกินยอดที่ยังขาด</span></li><li><b>โอนเข้าพร้อมเพย์ของผู้ขอ</b><span>สแกน QR ได้ทุกธนาคาร ชื่อบัญชีตรงกับที่ทีมตรวจตัวตนแล้ว</span></li><li><b>ครบยอดแล้ว ผู้ขอนำไปจ่ายบิล</b><span>และส่งใบเสร็จให้ทีมตรวจภายใน ${RECEIPT_DAYS} วัน</span></li></ol>`;
   }
   function detail(b) {
-    const gap = missing(b), open = isOpen(b), fav = state.favorites.has(b.id);
-    const splitPill = `<span class="status-pill split">${icon('users')}แยกจ่ายได้</span>`;
-    const balance = `<div class="detail-balance"><span class="amount-main">${money(gap)}</span><span class="amount-target"> / ${money(b.goal)}</span><p class="bill-meta">ยอดที่ยังขาด / ยอดบิล${open && dueText(b) ? ` · ${dueText(b)}` : ''}</p></div>${progress(b)}<p class="bill-meta">ช่วยแล้ว <b>${money(b.raised)}</b> จาก ${b.helpers} คน</p>`;
-    const action = open ? `<button class="button coral full" data-start-help="${b.id}">ช่วยอีกนิด เริ่ม ฿20 ${icon('heart')}</button>` : `<div class="support-note">${icon(b.status === 'paid' ? 'check' : 'clock')}<p><b>${b.status === 'paid' ? 'บิลนี้จ่ายครบแล้ว ขอบคุณทุกแรงช่วย' : b.status === 'closed' ? 'บิลนี้ปิดรับแล้ว' : 'ครบยอดแล้ว รอทีมยืนยันกับผู้ให้บริการ'}</b><br>ยังไม่ต้องจ่ายเพิ่มสำหรับบิลนี้</p></div>`;
-    return `<section class="view detail-view"><div class="view-header">${backButton('#/bills', 'บิลที่รอเรา')}<div class="header-actions"><button class="icon-button" data-share="${b.id}" aria-label="บอกต่อบิลนี้">${icon('send')}</button><button class="icon-button${fav ? ' is-saved' : ''}" data-save="${b.id}" aria-pressed="${fav}" aria-label="${fav ? 'ยกเลิกเก็บ' : 'เก็บ'}บิลนี้">${icon('heart')}</button></div></div>
-      <div class="detail-layout"><div class="detail-main"><div class="detail-title"><span class="category-label">${safe(b.label)}</span><h1 class="view-title" tabindex="-1">${safe(b.title)}</h1><p class="bill-meta">โดย ${safe(b.alias)}</p><p class="bill-meta">${b.region ? `${icon('pin')} ${safe(b.region)} ` : ''}${statusPill(b)} ${open ? splitPill : ""}</p></div>
-      <div class="detail-progress">${balance}</div>
+    const open = isOpen(b);
+    const action = open ? `<button class="button coral full" data-start-help="${b.id}">ช่วยอีกนิด เริ่ม ฿20 ${icon('heart')}</button>` : `<div class="support-note">${icon(b.status === 'paid' ? 'check' : 'clock')}<p><b>${b.status === 'paid' ? 'บิลนี้จ่ายแล้ว ขอบคุณทุกแรงช่วย' : b.status === 'closed' || tooOverdue(b) ? 'บิลนี้ปิดรับแล้ว' : `ครบยอดแล้ว ผู้ขอกำลังนำไปจ่ายบิล`}</b><br>ไม่ต้องโอนเพิ่มสำหรับบิลนี้</p></div>`;
+    return `<section class="view detail-view"><div class="view-header">${backButton('#/bills', 'บิลที่รอเรา')}<div class="header-actions"><button class="icon-button" data-share="${b.id}" aria-label="บอกต่อบิลนี้">${icon('megaphone')}</button>${saveButton(b)}</div></div>
+      <div class="detail-layout"><div class="detail-main"><div class="detail-title"><span class="category-label">${safe(b.label)}</span><h1 class="view-title" tabindex="-1">${safe(b.title)}</h1><p class="bill-meta">โดย ${safe(b.alias)}</p><p class="bill-meta">${b.region ? `${icon('pin')} ${safe(b.region)} ` : ''}${statusPill(b)}</p></div>
+      <div class="detail-progress">${balance(b, open ? dueText(b) : '')}</div>
       <section class="story-section"><h2>รายละเอียด</h2><p>${safe(b.story)}</p></section>
-      <section class="story-section"><h2>ช่วยยังไง</h2>${howItWorks(b)}<button class="text-link" data-help>เราดูแลความไว้ใจอย่างไร ${icon('chevron')}</button></section>
-      <p class="small-text">เห็นอะไรผิดปกติในบิลนี้? <button class="text-link inline-link" data-report>แจ้งทีม</button></p></div>
-      <aside class="detail-aside"><div class="form-card">${statusPill(b)}${balance}<div class="summary-box"><div class="summary-row"><span>จ่ายเข้า</span><b>${safe(b.pay.provider || '-')}</b></div>${b.dueDate ? `<div class="summary-row"><span>กำหนดตามบิล</span><b>${dueDate(b)}</b></div>` : ''}</div>${action}<p class="small-text centered">จ่ายตรงเข้าบิล ไม่ผ่านบัญชีผู้ขอ</p></div></aside></div>
+      <section class="story-section"><h2>ช่วยยังไง</h2>${howItWorks()}<button class="text-link" data-help>เราดูแลความไว้ใจอย่างไร ${icon('chevron')}</button></section>
+      <p class="small-text">เห็นอะไรผิดปกติในบิลนี้? <a class="text-link inline-link" href="${contactLink('report', b)}">แจ้งทีม</a></p></div>
+      <aside class="detail-aside"><div class="form-card">${balance(b, open ? dueText(b) : '')}${b.dueDate ? `<p class="bill-meta">กำหนดชำระตามบิล ${dueDate(b)}</p>` : ''}${action}<p class="small-text centered">เงินเข้าพร้อมเพย์ของผู้ขอโดยตรง</p></div></aside></div>
       <div class="mobile-helpbar"><button class="button outline" data-share="${b.id}">บอกต่อคนละนิด</button>${open ? `<button class="button coral" data-start-help="${b.id}">ช่วยอีกนิด ${icon('heart')}</button>` : `${statusPill(b)}`}</div></section>`;
   }
   function amountError(b, value) {
     const gap = missing(b), min = Math.min(20, gap);
-    // Whole baht, except the last helper may pay the exact remainder (bills can end in satang).
+    // Whole baht, except the last helper may send the exact remainder (bills can end in satang).
     if (!Number.isFinite(value) || (!Number.isInteger(value) && value !== gap)) return 'กรอกจำนวนเงินเป็นบาทเต็มจำนวน';
     if (value < min) return `เริ่มที่ ${money(min)} เลือกตามกำลังที่สะดวกได้`;
     if (value > gap) return `ยอดที่ยังขาดคือ ${money(gap)} ช่วยไม่เกินยอดนี้นะ`;
@@ -240,71 +230,103 @@
     if (!isOpen(b)) return closedView(b);
     const amount = state.amounts[b.id] ?? Math.min(20, missing(b));
     const preset = [20, 50, 100].includes(amount);
-    return `<section class="view help-view">${topbar('ช่วยจ่ายคนละนิด', {back:`#/bill/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)} · ยังขาด ${money(missing(b))}</p></div><div class="help-form form-card"><h2>วันนี้อยากช่วยเท่าไร</h2><form id="help-form" data-bill="${b.id}" novalidate><div class="amount-options" role="group" aria-label="เลือกจำนวนเงิน">${[20, 50, 100].map(n => `<button class="amount-option${amount === n ? ' selected' : ''}" type="button" data-amount="${n}" ${n > missing(b) ? 'disabled' : ''} aria-pressed="${amount === n}">${money(n)}</button>`).join('')}</div><div class="form-field"><label class="field-label" for="custom-amount">หรือระบุจำนวนเอง</label><div class="amount-input"><input class="input" id="custom-amount" name="amount" type="number" inputmode="decimal" min="${Math.min(20, missing(b))}" max="${missing(b)}" step="any" value="${preset ? '' : amount}" placeholder="ระบุจำนวนอื่น" autocomplete="off" aria-describedby="amount-error" ${error ? 'aria-invalid="true"' : ''}><span aria-hidden="true">฿</span></div><p id="amount-error" class="field-error" role="alert">${error}</p></div><button type="submit" class="button coral full">ไปหน้าจ่ายบิล ${icon('arrow')}</button></form><div class="support-note">${icon('lock')}<p>เงินจ่ายตรงเข้าบิลของ ${safe(b.pay.provider || 'ผู้ให้บริการ')}<br>ไม่ผ่านบัญชีผู้ขอหรือทีม</p></div></div></div></section>`;
+    return `<section class="view help-view">${topbar(safe(b.title), {back:`#/bill/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<p class="bill-meta">โดย ${safe(b.alias)} · ขาดอีก ${money(missing(b))}</p></div><div class="help-form form-card"><h2>วันนี้อยากช่วยเท่าไร</h2><form id="help-form" data-bill="${b.id}" novalidate><div class="amount-options" role="group" aria-label="เลือกจำนวนเงิน">${[20, 50, 100].map(n => `<button class="amount-option${amount === n ? ' selected' : ''}" type="button" data-amount="${n}" ${n > missing(b) ? 'disabled' : ''} aria-pressed="${amount === n}">${money(n)}</button>`).join('')}</div><div class="form-field"><label class="field-label" for="custom-amount">หรือระบุจำนวนเอง</label><div class="amount-input"><input class="input" id="custom-amount" name="amount" type="number" inputmode="decimal" min="${Math.min(20, missing(b))}" max="${missing(b)}" step="any" value="${preset ? '' : amount}" placeholder="ระบุจำนวนอื่น" autocomplete="off" aria-describedby="amount-error" ${error ? 'aria-invalid="true"' : ''}><span aria-hidden="true">฿</span></div><p id="amount-error" class="field-error" role="alert">${error}</p></div><button type="submit" class="button coral full">ไปหน้าโอนเงิน ${icon('arrow')}</button></form><div class="support-note">${icon('lock')}<p>เงินโอนเข้าพร้อมเพย์ของผู้ขอโดยตรง<br>ชื่อบัญชีตรงกับที่ทีมตรวจตัวตนแล้ว</p></div></div></div></section>`;
   }
   function pay(b) {
     if (!isOpen(b)) return closedView(b);
     const amount = state.amounts[b.id];
     if (!amount || amountError(b, amount)) return help(b, amount ? amountError(b, amount) : '');
-    const p = b.pay;
-    if (!p.private && (hasBillQr(p) || hasBillBarcode(p))) return payByScan(b, amount);
-    return `<section class="view review-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)}</p></div><div class="help-form form-card">
-      <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${p.private ? 'ขอจากทีมทางแชต' : safe(p.ref || '-')}${p.ref && !p.private ? ` <button class="icon-button small-icon" data-copy="${safe(String(p.ref).replace(/[^0-9A-Za-z]/g, ''))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
-      ${p.private ? `<div class="support-note">${icon('lock')}<p>เพื่อความเป็นส่วนตัวของผู้ขอ ทีมจะส่ง${safe(p.refLabel || 'เลขสำหรับจ่าย')}ให้ทางแชต</p></div>${contactButton(`ขอ${safe(p.refLabel || 'เลขสำหรับจ่าย')}ทาง ${safe(contact?.label)}`, 'outline')}` : ''}
-      ${p.qr && !p.private ? `<img class="pay-qr" src="${safe(p.qr)}" alt="QR สำหรับจ่ายบิล ${safe(b.title)}" width="240" height="240">` : ''}
-      ${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}
-      <div class="support-note warm">${icon('info')}<p>ตรวจชื่อผู้รับเงินในแอปให้เป็น <b>${safe(p.provider || 'ผู้ให้บริการ')}</b> ก่อนกดยืนยัน และเก็บสลิปไว้${contact ? 'ส่งให้ทีม' : 'เป็นหลักฐาน'}</p></div>
-      <button class="button coral full" data-paid="${b.id}">${contact ? `จ่ายแล้ว ส่งสลิปให้ทีม` : 'จ่ายแล้ว'} ${icon('check')}</button>
-      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p></div></div></section>`;
-  }
-  function payByScan(b, amount) {
-    const p = b.pay, bank = state.bank, tested = p.banks || {};
-    const method = !bank ? '' : ['qr', 'barcode', 'manual'].includes(tested[bank]) ? tested[bank] : 'try';
-    const manual = `<div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${safe(p.ref || '-')} <button class="icon-button small-icon" data-copy="${safe(qrRef(p.ref))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button></b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}`;
-    const scan = kind => {
-      const isQr = kind === 'qr', name = isQr ? 'QR' : 'บาร์โค้ด', image = isQr ? billQrImage(b, amount) : billBarcodeImage(b, amount);
-      return `<figure class="pay-qr-card${isQr ? '' : ' is-barcode'}"><img class="pay-qr" src="${image}" alt="${name}จ่ายบิล ${safe(p.provider)} ยอด ${money(amount)}"><figcaption>${safe(b.title)}</figcaption></figure>
-        <a class="button primary full" href="${image}" download="konlanid-${safe(b.id)}-${Number(amount).toFixed(2)}${isQr ? '' : '-barcode'}.png">บันทึก${name} ${icon('arrow')}</a>
-        <ol class="pay-steps qr-steps"><li><b>บันทึก${name}ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูปจากอัลบั้ม แอปจะกรอกเลขและยอดให้เอง</span></li><li><b>ตรวจว่าผู้รับเงินเป็น ${safe(p.payee || p.provider)} ยอด ${money(amount)}</b><span>แล้วกดยืนยัน เก็บสลิปไว้${contact ? 'ส่งให้ทีม' : ''}</span></li></ol>
-        <p class="small-text">อยู่บนคอมพิวเตอร์? ใช้แอปธนาคารในมือถือสแกนจากจอได้เลย</p>`;
-    };
-    const fallback = (summary, body) => `<details class="faq"><summary>${summary} ${icon('chevron')}</summary>${body}</details>`;
-    let panel = '';
-    if (method === 'qr') panel = scan('qr') + fallback('สแกนไม่ได้? กรอกเลขเอง', manual);
-    else if (method === 'barcode') panel = scan('barcode') + fallback('สแกนไม่ได้? กรอกเลขเอง', manual);
-    else if (method === 'manual') panel = `<p class="muted">แอปนี้ยังสแกนจ่ายบิลนี้ไม่ได้ กรอกเลขเองตามนี้</p>${manual}`;
-    // Untested banks: manual entry is the one route AIS lists for every bank, so lead with it.
-    else if (method === 'try') panel = manual + (hasBillQr(p) ? fallback('ลองสแกน QR แทน', scan('qr')) : '') + (hasBillBarcode(p) ? fallback('ลองสแกนบาร์โค้ดแทน', scan('barcode')) : '');
-    const chips = `<div class="filters bank-picker" role="group" aria-label="ธนาคารที่คุณใช้">${BANKS.map(([id, name]) => `<button class="filter${bank === id ? ' active' : ''}" data-bank="${id}" aria-pressed="${bank === id}">${name}</button>`).join('')}</div>`;
-    return `<section class="view review-view pay-qr-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-form form-card">
-      <h2>ใช้แอปธนาคารไหน</h2>${chips}
-      <div class="pay-panel">${panel || '<p class="muted">เลือกธนาคารที่คุณใช้ แล้วเราจะบอกวิธีที่ง่ายที่สุด</p>'}</div>
-      ${method ? `<button class="button coral full" data-paid="${b.id}">${contact ? 'จ่ายแล้ว ส่งสลิปให้ทีม' : 'จ่ายแล้ว'} ${icon('check')}</button>
-      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p>` : ''}</div></div></section>`;
+    const p = b.pay, name = safe(p.accountName || 'ชื่อผู้ขอ'), image = typeof window.qrcode === 'function' ? promptPayImage(b, amount) : '';
+    const manual = `<div class="summary-box"><div class="summary-row pay-ref"><span>พร้อมเพย์</span><b>${maskPromptPay(p.promptpay)} <button class="icon-button small-icon" data-copy="${digits(p.promptpay)}" aria-label="คัดลอกเลขพร้อมเพย์">${icon('copy')}</button></b></div><div class="summary-row"><span>ชื่อบัญชี</span><b>${name}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div><p class="small-text">เปิดแอปธนาคาร เลือกโอนเงินพร้อมเพย์ วางเลขที่คัดลอกไว้ แล้วใส่ยอด ${money(amount)}</p>`;
+    return `<section class="view review-view pay-qr-view">${topbar(`โอน ${money(amount)} ให้ผู้ขอ`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-form form-card">
+      ${image ? `<figure class="pay-qr-card"><img class="pay-qr" src="${image}" alt="QR พร้อมเพย์ ยอด ${money(amount)} สำหรับ${safe(b.title)}"><figcaption>${safe(b.title)}</figcaption></figure>
+      <a class="button primary full" href="${image}" download="konlanid-${safe(b.id)}-${Number(amount).toFixed(2)}.png">${icon('download')} บันทึก QR</a>
+      <ol class="pay-steps qr-steps"><li><b>บันทึก QR ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูป QR จากอัลบั้ม แอปจะใส่ยอดให้เอง</span></li><li><b>ตรวจชื่อบัญชีให้เป็น “${name}”</b><span>และยอด ${money(amount)} แล้วกดยืนยัน เก็บสลิปไว้</span></li></ol>
+      <p class="small-text desktop-only">อยู่บนคอมพิวเตอร์? ใช้แอปธนาคารในมือถือสแกนจากจอได้เลย</p>
+      <details class="faq"><summary>สแกนไม่ได้? โอนด้วยเลขพร้อมเพย์ ${icon('chevron')}</summary>${manual}</details>` : manual}
+      <div class="support-note warm">${icon('info')}<p>ถ้าชื่อบัญชีในแอปไม่ตรงกับ “${name}” อย่าเพิ่งโอน <a class="text-link inline-link" href="${contactLink('report', b)}">แจ้งทีม</a></p></div>
+      <button class="button coral full" data-paid="${b.id}">โอนแล้ว ${icon('check')}</button>
+      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อผู้ขอยืนยันว่าเงินเข้าแล้ว</p></div></div></section>`;
   }
   function closedView(b) {
-    return `<section class="view">${topbar('บิลนี้ไม่ต้องช่วยเพิ่มแล้ว', {back:`#/bill/${b.id}`})}<div class="empty-state">${icon(b.status === 'paid' ? 'check' : 'clock')}<h2>${b.status === 'paid' ? 'จ่ายครบแล้ว ขอบคุณทุกแรงช่วย' : 'ครบยอดหรือปิดรับแล้ว'}</h2><p>ลองดูบิลอื่นที่ยังรอเราอยู่ได้เลย</p><a class="button primary" href="#/bills">ดูบิลที่รอเรา</a></div></section>`;
+    return `<section class="view">${topbar('บิลนี้ไม่ต้องช่วยเพิ่มแล้ว', {back:`#/bill/${b.id}`})}<div class="empty-state">${icon(b.status === 'paid' ? 'check' : 'clock')}<h2>${b.status === 'paid' ? 'จ่ายบิลแล้ว ขอบคุณทุกแรงช่วย' : 'ครบยอดหรือปิดรับแล้ว'}</h2><p>ลองดูบิลอื่นที่ยังรอเราอยู่ได้เลย</p><a class="button primary" href="#/bills">ดูบิลที่รอเรา</a></div></section>`;
   }
   function thanks(b) {
     const pledge = [...state.pledges].reverse().find(p => p.billId === b.id);
-    return `<section class="view success-view"><div class="success-layout"><div class="success-content"><div class="success-check">${icon('check')}</div><h1 class="view-title success-title" tabindex="-1">ขอบคุณที่ช่วย<br>คนละนิดนะคะ</h1><p class="success-description">${pledge ? `แรงช่วย ${money(pledge.amount)} ของคุณ` : 'แรงช่วยเล็ก ๆ ของคุณ'}<br>มีความหมายมากจริง ๆ</p>${contactButton(`ยังไม่ได้ส่งสลิป? ส่งทาง ${safe(contact?.label)}`, 'outline')}<a class="button outline full" href="#/bill/${b.id}">ดูความคืบหน้าบิลนี้ ${icon('arrow')}</a><a class="back-home" href="#/">กลับหน้าหลัก</a></div><img class="success-art" src="assets/woman-heart.webp" width="650" height="650" alt="ภาพวาดผู้หญิงกอดหัวใจด้วยรอยยิ้ม"></div></section>`;
+    return `<section class="view success-view"><div class="success-layout"><div class="success-content"><div class="success-check">${icon('check')}</div><h1 class="view-title success-title" tabindex="-1">ขอบคุณที่ช่วย<br>คนละนิดนะ</h1><p class="success-description">${pledge ? `แรงช่วย ${money(pledge.amount)} ของคุณ` : 'แรงช่วยเล็ก ๆ ของคุณ'}<br>มีความหมายมากจริง ๆ</p><a class="button primary full" href="${contactLink('paid', b, pledge && pledge.amount)}">แจ้งทีมว่าโอนแล้ว ${icon('arrow')}</a><a class="button outline full" href="#/bill/${b.id}">ดูความคืบหน้าบิลนี้</a><a class="back-home" href="#/">กลับหน้าหลัก</a></div><img class="success-art" src="assets/woman-heart.webp" width="650" height="650" alt="ภาพวาดผู้หญิงกอดหัวใจด้วยรอยยิ้ม"></div></section>`;
   }
   function timeline(b) {
     const step = b.status === 'paid' ? 2 : missing(b) ? 0 : 1;
-    const items = [['เปิดรับแรงช่วย', `ช่วยแล้ว ${money(b.raised)} / ${money(b.goal)}`], ['ครบยอดบิล', 'ทีมตรวจกับผู้ให้บริการว่ารับยอดครบ'], ['จ่ายครบแล้ว', 'ปิดรับ บิลรอบนี้ไม่มียอดค้าง']];
+    const items = [['เปิดรับแรงช่วย', `ช่วยแล้ว ${money(b.raised)} จาก ${money(b.goal)}`], ['ครบยอด', `ผู้ขอนำไปจ่ายบิล และส่งใบเสร็จภายใน ${RECEIPT_DAYS} วัน`], ['จ่ายบิลแล้ว', 'ทีมตรวจใบเสร็จแล้ว']];
     return `<ol class="timeline">${items.map(([title, desc], i) => `<li class="timeline-item${i <= step ? ' done' : ''}"><span class="timeline-dot">${i < step ? icon('check') : i + 1}</span><div><b>${title}</b><p>${desc}</p></div></li>`).join('')}</ol>`;
   }
   function activity() {
-    const total = state.pledges.reduce((n, p) => n + p.amount, 0);
+    const total = state.pledges.reduce((n, p) => n + p.amount, 0), anyOpen = bills.some(isOpen);
     const mine = [...new Set(state.pledges.map(p => p.billId))].map(getBill).filter(Boolean);
-    return `<section class="view activity-view">${topbar('รอยต่อการช่วย')}<div class="activity-summary"><span class="category-icon water">${icon('leaf')}</span><div><p class="muted">ที่คุณช่วยจากเครื่องนี้</p><h2>${money(total)} <span class="small-text">จาก ${state.pledges.length} ครั้ง</span></h2></div></div><div class="activity-list">${mine.length ? mine.map(b => `<article class="activity-card"><div class="section-label"><div><span class="category-label">${safe(b.label)}</span><h2>${safe(b.title)}</h2></div><b class="activity-amount">${money(state.pledges.filter(p => p.billId === b.id).reduce((n, p) => n + p.amount, 0))}</b></div>${timeline(b)}<a class="text-link" href="#/bill/${b.id}">ดูบิลและยอดล่าสุด ${icon('chevron')}</a></article>`).join('') : `<div class="empty-state soft-empty">${icon('heart')}<h2>รอยต่อแรก เริ่มได้จากนิดเดียว</h2><p>เมื่อคุณช่วยบิลไหน ความคืบหน้าของบิลนั้นจะมาอยู่ตรงนี้</p><a class="button primary" href="#/bills">เลือกบิลที่อยากช่วย ${icon('arrow')}</a></div>`}</div></section>`;
+    const empty = `<div class="empty-state soft-empty">${icon('users')}<h2>รอยต่อแรก เริ่มได้จากนิดเดียว</h2><p>เมื่อคุณช่วยบิลไหน ความคืบหน้าของบิลนั้นจะมาอยู่ตรงนี้</p>${anyOpen ? `<a class="button primary" href="#/bills">เลือกบิลที่อยากช่วย ${icon('arrow')}</a>` : `<button class="button soft" data-share>บอกต่อคนละนิด ${icon('megaphone')}</button>`}</div>`;
+    return `<section class="view activity-view">${topbar('รวมกันคนละนิด')}${state.pledges.length ? `<div class="activity-summary"><span class="category-icon water">${icon('leaf')}</span><div><p class="muted">ที่คุณช่วยจากเครื่องนี้</p><h2>${money(total)} <span class="small-text">จาก ${state.pledges.length} ครั้ง</span></h2></div></div>` : ''}<div class="activity-list">${mine.length ? mine.map(b => `<article class="activity-card"><div class="section-label"><div><span class="category-label">${safe(b.label)}</span><h2>${safe(b.title)}</h2></div><b class="activity-amount">${money(state.pledges.filter(p => p.billId === b.id).reduce((n, p) => n + p.amount, 0))}</b></div>${timeline(b)}<a class="text-link" href="#/bill/${b.id}">ดูบิลและยอดล่าสุด ${icon('chevron')}</a></article>`).join('') : empty}</div></section>`;
   }
   function profile() {
     const total = state.pledges.reduce((n, p) => n + p.amount, 0), unique = new Set(state.pledges.map(p => p.billId)).size;
-    return `<section class="view profile-view">${topbar('พื้นที่ของฉัน')}<div class="profile-layout"><div><div class="profile-card"><div class="profile-avatar">${icon('heart')}</div><h2>เพื่อนคนละนิด</h2><p class="muted">วันนี้เป็นผู้ให้ วันหน้าอาจเป็นผู้รับ</p><div class="profile-stats"><div><b>${state.pledges.length}</b><span>ครั้งที่ช่วย</span></div><div><b>${unique}</b><span>บิลที่ช่วย</span></div><div><b>${money(total)}</b><span>ยอดที่ช่วย</span></div></div><p class="small-text">นับจากที่คุณกด "จ่ายแล้ว" บนเครื่องนี้ ไม่ต้องสมัครสมาชิก</p></div></div><div class="profile-menu"><a href="#/activity">${icon('clock')}<span>ประวัติการช่วยเหลือ</span>${icon('chevron')}</a><button data-favorites>${icon('heart')}<span>บิลที่เก็บไว้ <small>(${state.favorites.size})</small></span>${icon('chevron')}</button><a href="#/request">${icon('send')}<span>ขอความช่วยเหลือ หรือส่งต่อให้คนที่ต้องการ</span>${icon('chevron')}</a><button data-help>${icon('shield')}<span>ความไว้ใจและความเป็นส่วนตัว</span>${icon('chevron')}</button>${contact ? `<a href="${safe(contact.url)}" target="_blank" rel="noopener noreferrer">${icon('chat')}<span>ติดต่อทีมคนละนิด</span>${icon('chevron')}</a>` : ''}</div></div></section>`;
+    return `<section class="view profile-view">${topbar('พื้นที่ของฉัน')}<div class="profile-layout"><div><div class="profile-card"><div class="profile-avatar">${icon('user')}</div><h2>เพื่อนคนละนิด</h2><p class="muted">วันนี้เป็นผู้ให้ วันหน้าอาจเป็นผู้รับ</p>${state.pledges.length ? `<div class="profile-stats"><div><b>${state.pledges.length}</b><span>ครั้งที่ช่วย</span></div><div><b>${unique}</b><span>บิลที่ช่วย</span></div><div><b>${money(total)}</b><span>ยอดที่ช่วย</span></div></div><p class="small-text">นับจากที่คุณกด “โอนแล้ว” บนเครื่องนี้ ไม่ต้องสมัครสมาชิก</p>` : ''}</div></div><div class="profile-menu"><a href="#/activity">${icon('users')}<span>รวมกันคนละนิด</span>${icon('chevron')}</a><button data-favorites>${icon('bookmark')}<span>บิลที่เก็บไว้ <small>(${state.favorites.size})</small></span>${icon('chevron')}</button><a href="#/request">${icon('send')}<span>ส่งต่อคนละนิด</span>${icon('chevron')}</a><button data-help>${icon('shield')}<span>ความไว้ใจและความเป็นส่วนตัว</span>${icon('chevron')}</button><a href="${contactLink('question')}">${icon('chat')}<span>ติดต่อทีมคนละนิด</span>${icon('chevron')}</a></div></div></section>`;
   }
   function requestView() {
-    return `<section class="view request-view">${topbar('ส่งต่อคนละนิด')}<div class="request-layout"><div class="request-intro"><span class="category-icon electricity">${icon('send')}</span><h2>วันนี้รับแรงช่วย<br>วันหน้าอาจส่งต่อ</h2><p>ถ้าคุณหรือคนที่คุณรู้จักกำลังติดขัดเรื่องบิลจำเป็น<br>ส่งเรื่องมาให้ทีมได้ ไม่ต้องเปิดหน้า และไม่ต้องคืนเงินให้ผู้ช่วย</p></div><div class="form-card request-card"><h2>เตรียมอะไรบ้าง</h2><ul class="pay-how"><li>รูปบิลตัวจริงรอบล่าสุด (ค่าไฟ ค่าน้ำ ค่ามือถือ หรือบิลจำเป็นอื่น)</li><li>บิลต้อง<b>แยกจ่ายทีละส่วนได้</b> และ<b>ค้างชำระไม่เกิน 1 เดือน</b> ไม่แน่ใจ ทีมช่วยเช็กให้</li><li>ความเกี่ยวข้องกับบิล เช่น เป็นเจ้าของบัญชี ผู้เช่า หรือคนในครอบครัว</li><li>เล่าสั้น ๆ ว่าตอนนี้ติดขัดเรื่องอะไร เท่าที่สบายใจ</li></ul><div class="support-note">${icon('shield')}<p>ทีมดูบิลกับคุณเป็นการส่วนตัวก่อนเปิดรับ หน้าเว็บแสดงแค่ชื่อเรียก จังหวัด และยอดบิล ไม่แสดงชื่อจริงหรือที่อยู่</p></div>${contact ? contactButton(`ส่งเรื่องทาง ${safe(contact.label)}`) : `<p class="small-text">ช่องทางติดต่อทีมจะเปิดเร็ว ๆ นี้</p>`}</div></div></section>`;
+    return `<section class="view request-view">${topbar('ส่งต่อคนละนิด')}<div class="request-layout"><div class="request-intro"><span class="category-icon electricity">${icon('send')}</span><h2>วันนี้รับแรงช่วย<br>วันหน้าอาจส่งต่อ</h2><p>ถ้าคุณหรือคนที่คุณรู้จักกำลังติดขัดเรื่องบิลจำเป็น ส่งเรื่องมาให้ทีมได้ ไม่ต้องเปิดหน้า และไม่ต้องคืนเงินให้ผู้ช่วย</p></div><div class="form-card request-card"><h2>เปิดรับบิลอย่างไร</h2><ul class="pay-how"><li>ทีมตรวจตัวตนของผู้ขอด้วยบัตรประชาชนและรูปถ่ายคู่บัตร</li><li>บิลรอบล่าสุดในชื่อของผู้ขอ ค้างชำระไม่เกิน 1 เดือน</li><li>พร้อมเพย์ในชื่อของผู้ขอเอง แนะนำให้ใช้เบอร์มือถือ</li><li>ครบยอดแล้ว นำไปจ่ายบิล และส่งใบเสร็จให้ทีมภายใน ${RECEIPT_DAYS} วัน</li></ul><div class="support-note">${icon('shield')}<p>หน้าเว็บแสดงชื่อเรียกที่คุณเลือกเอง จังหวัด และยอดบิล ตอนคนช่วยโอน แอปธนาคารจะแสดงชื่อบัญชีพร้อมเพย์ของคุณ เพื่อให้เขาตรวจได้ว่าโอนถูกคน</p></div><a class="button primary full" href="${contactLink('ask_help')}">ส่งเรื่องขอความช่วยเหลือ ${icon('arrow')}</a><a class="button outline full" href="${contactLink('refer')}">แนะนำคนที่ต้องการความช่วยเหลือ</a><p class="small-text">ระบบสมัครและยืนยันตัวตนออนไลน์กำลังจะเปิด ระหว่างนี้ทีมจะติดต่อกลับตามช่องทางที่คุณให้ไว้</p></div></div></section>`;
+  }
+  const TOPICS = [['ask_help', 'ขอความช่วยเหลือเรื่องบิล'], ['refer', 'แนะนำคนที่ต้องการความช่วยเหลือ'], ['report', 'แจ้งเรื่องผิดปกติ'], ['paid', 'แจ้งว่าโอนแล้ว'], ['question', 'สอบถามเรื่องอื่น ๆ']];
+  const needsContact = topic => ['ask_help', 'refer', 'question'].includes(topic);
+  function contactView() {
+    const q = params(), topic = TOPICS.some(([id]) => id === q.get('topic')) ? q.get('topic') : 'question';
+    const b = getBill(q.get('bill') || ''), amount = Number(q.get('amount')) > 0 ? Number(q.get('amount')) : null;
+    const back = b ? `#/bill/${b.id}` : topic === 'ask_help' || topic === 'refer' ? '#/request' : '#/me';
+    const hint = {ask_help:'เล่าสั้น ๆ ว่าเป็นบิลอะไร ยอดเท่าไร และตอนนี้ติดขัดเรื่องอะไร เท่าที่สบายใจ', refer:'เล่าสั้น ๆ ว่าเขาติดขัดเรื่องบิลอะไร และเขารู้ว่าคุณส่งเรื่องมาหรือยัง', report:'เห็นอะไรผิดปกติ เช่น ชื่อบัญชีตอนโอนไม่ตรง มีคนส่ง QR อื่นมาให้นอกเว็บ หรือบิลนี้จ่ายไปแล้ว', paid:'บอกเวลาที่โอน และชื่อที่ใช้โอน ทีมจะยืนยันกับผู้ขอให้', question:'อยากถามหรือบอกอะไรทีมคนละนิด'}[topic];
+    return `<section class="view contact-view">${topbar('ติดต่อทีมคนละนิด', {back})}<div class="help-layout"><div class="help-form form-card"><form id="contact-form" novalidate>
+      <div class="form-field"><label class="field-label" for="contact-topic">เรื่องที่ติดต่อ</label><select class="input" id="contact-topic" name="topic">${TOPICS.map(([id, label]) => `<option value="${id}"${id === topic ? ' selected' : ''}>${label}</option>`).join('')}</select></div>
+      ${b ? `<p class="contact-bill">${categoryIcon(b)}<span>เกี่ยวกับบิล <b>${safe(b.title)}</b>${amount ? ` · ${money(amount)}` : ''}</span></p><input type="hidden" name="bill" value="${safe(b.id)}">${amount ? `<input type="hidden" name="amount" value="${amount}">` : ''}` : ''}
+      <div class="form-field"><label class="field-label" for="contact-message">ข้อความ</label><textarea class="input" id="contact-message" name="message" rows="5" maxlength="2000" required aria-describedby="contact-message-hint contact-message-error">${topic === 'paid' && amount ? `โอนแล้ว ${money(amount)} ` : ''}</textarea><p id="contact-message-hint" class="small-text">${hint}</p><p id="contact-message-error" class="field-error" role="alert"></p></div>
+      <div class="form-field"><label class="field-label" for="contact-name">ชื่อเรียก <span class="muted">(ไม่บังคับ)</span></label><input class="input" id="contact-name" name="name" maxlength="80" autocomplete="nickname"></div>
+      <div class="form-field"><label class="field-label" for="contact-reply">ช่องทางให้ทีมติดต่อกลับ <span class="muted" id="contact-reply-optional">${needsContact(topic) ? '' : '(ไม่บังคับ)'}</span></label><input class="input" id="contact-reply" name="reply" maxlength="120" placeholder="LINE ID เบอร์โทร หรืออีเมล" aria-describedby="contact-reply-error"><p id="contact-reply-error" class="field-error" role="alert"></p></div>
+      <div class="hp-field" aria-hidden="true"><label for="contact-website">เว็บไซต์</label><input id="contact-website" name="website" tabindex="-1" autocomplete="off"></div>
+      <label class="checkbox-label"><input type="checkbox" id="contact-consent" name="consent" aria-describedby="contact-consent-error"> ยินยอมให้ทีมคนละนิดเก็บข้อความนี้ไว้เพื่อติดต่อกลับและดูแลบิล</label><p id="contact-consent-error" class="field-error" role="alert"></p>
+      <div class="support-note warm">${icon('lock')}<p>อย่าส่งเลขบัตรประชาชน รหัสผ่าน หรือรหัส OTP ในข้อความ ทีมจะขอเอกสารที่จำเป็นผ่านช่องทางที่ปลอดภัย</p></div>
+      <p id="contact-send-error" class="field-error" role="alert"></p>
+      <button type="submit" class="button coral full" id="contact-submit">ส่งข้อความ ${icon('send')}</button>
+    </form></div></div></section>`;
+  }
+  function contactSent() {
+    return `<section class="view success-view">${topbar('ส่งข้อความแล้ว', {back:'#/'})}<div class="empty-state soft-empty">${icon('check')}<h2>ทีมได้รับข้อความแล้ว</h2><p>ขอบคุณที่ส่งมานะ ถ้าให้ช่องทางติดต่อไว้ ทีมจะติดต่อกลับเร็วที่สุด</p><a class="button primary" href="#/">กลับหน้าหลัก</a></div></section>`;
+  }
+  async function sendContact(form) {
+    const f = new FormData(form), topic = String(f.get('topic') || 'question');
+    const message = String(f.get('message') || '').trim(), reply = String(f.get('reply') || '').trim();
+    const errors = {
+      'contact-message': message.length < 5 ? 'เขียนข้อความอย่างน้อยสั้น ๆ สักประโยคนะ' : '',
+      'contact-reply': needsContact(topic) && !reply ? 'ใส่ช่องทางให้ทีมติดต่อกลับ เช่น LINE ID หรือเบอร์โทร' : '',
+      'contact-consent': !f.get('consent') ? 'กรุณากดยินยอมก่อนส่งข้อความ' : ''
+    };
+    let first = null;
+    for (const [id, msg] of Object.entries(errors)) {
+      const err = form.querySelector(`#${id}-error`), input = form.querySelector(`#${id}`);
+      err.textContent = msg; input.setAttribute('aria-invalid', String(!!msg));
+      if (msg && !first) first = input;
+    }
+    if (first) {first.focus(); return;}
+    if (String(f.get('website') || '')) {go('/contact-sent'); return;}
+    const sendError = form.querySelector('#contact-send-error'), button = form.querySelector('#contact-submit');
+    if (!backend) {sendError.textContent = 'ตอนนี้ยังส่งข้อความไม่ได้ ทีมกำลังเปิดระบบ ลองใหม่อีกครั้งภายหลังนะ'; return;}
+    if (state.sending) return;
+    state.sending = true; button.disabled = true; sendError.textContent = '';
+    const row = {topic, message, display_name: String(f.get('name') || '').trim() || null, contact: reply || null, bill_id: f.get('bill') || null, amount: f.get('amount') ? Number(f.get('amount')) : null, consent: true};
+    const headers = {'Content-Type': 'application/json', apikey: backend.key, Prefer: 'return=minimal'};
+    if (!backend.key.startsWith('sb_')) headers.Authorization = `Bearer ${backend.key}`;
+    try {
+      const res = await fetch(`${backend.url}/rest/v1/contact_messages`, {method: 'POST', headers, body: JSON.stringify(row)});
+      if (!res.ok) throw new Error(String(res.status));
+      go('/contact-sent');
+    } catch {
+      sendError.textContent = 'ส่งไม่สำเร็จ ลองกดส่งอีกครั้งนะ ข้อความที่เขียนไว้ยังอยู่';
+      button.disabled = false;
+    } finally {state.sending = false;}
   }
   function openSupport(html, title = 'คนละนิด · ความไว้ใจ') {
     if (!dialog || !support) return;
@@ -316,14 +338,11 @@
   }
   function closeSupport() {if (dialog?.open) dialog.close();}
   function trustModal() {
-    openSupport(`<div class="modal-body"><h2 class="modal-title">ช่วยกันอย่างไว้ใจได้</h2><div class="trust-checks"><div class="trust-item">${icon('file')}<div><b>ทีมดูบิลตัวจริงก่อนเปิดรับ</b><span>คุยกับผู้ขอและตรวจยอดกับบิลรอบล่าสุด</span></div></div><div class="trust-item">${icon('lock')}<div><b>จ่ายตรงเข้าบิล</b><span>เงินไปที่ผู้ให้บริการโดยตรง ไม่ผ่านบัญชีผู้ขอหรือทีม</span></div></div><div class="trust-item">${icon('check')}<div><b>รับเฉพาะบิลที่แยกจ่ายได้</b><span>และค้างชำระไม่เกิน 1 เดือน ค้างนานกว่านั้นระบบปิดรับเอง</span></div></div><div class="trust-item">${icon('eye')}<div><b>เปิดเผยเท่าที่จำเป็น</b><span>แสดงชื่อเรียก จังหวัด ยอดบิล และเลขสำหรับจ่ายเท่านั้น</span></div></div></div><details class="faq"><summary>ยอดบนหน้าเว็บอัปเดตเมื่อไร ${icon('chevron')}</summary><p>ทีมอัปเดตหลังตรวจสลิปที่ส่งมา จึงอาจช้ากว่ายอดจริงเล็กน้อย ดูยอดที่ยังขาดก่อนจ่ายทุกครั้ง เมื่อครบแล้วทีมจะปิดรับทันที</p></details><details class="faq"><summary>ถ้าเห็นอะไรผิดปกติ ${icon('chevron')}</summary><p>${contact ? `แจ้งทีมได้ทาง ${safe(contact.label)} ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง` : 'แจ้งทีมได้ตลอด ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง'}</p></details><button class="button primary full" data-close>เข้าใจแล้ว</button></div>`);
-  }
-  function reportModal() {
-    openSupport(`<div class="modal-body"><h2 class="modal-title">เห็นอะไรผิดปกติ บอกทีมได้เลย</h2><p class="muted">เช่น บิลซ้ำ จ่ายไปแล้ว เลขอ้างอิงแปลก หรือมีคนชวนให้โอนนอกระบบ ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง</p>${contact ? contactButton(`แจ้งทีมทาง ${safe(contact.label)}`) : ''}<button class="button outline full" data-close>ปิด</button></div>`, 'แจ้งทีม');
+    openSupport(`<div class="modal-body"><h2 class="modal-title">ช่วยกันอย่างไว้ใจได้</h2><div class="trust-checks"><div class="trust-item">${icon('user')}<div><b>ทีมตรวจตัวตนผู้ขอ</b><span>ด้วยบัตรประชาชนและรูปถ่ายคู่บัตร ก่อนเปิดรับบิล</span></div></div><div class="trust-item">${icon('file')}<div><b>ตรวจบิลรอบล่าสุดในชื่อผู้ขอ</b><span>ค้างไม่เกิน 1 เดือน ค้างนานกว่านั้นระบบปิดรับเอง</span></div></div><div class="trust-item">${icon('lock')}<div><b>เงินเข้าพร้อมเพย์ของผู้ขอโดยตรง</b><span>ชื่อบัญชีต้องตรงกับชื่อที่ทีมตรวจแล้ว ตรวจได้ในแอปธนาคารก่อนกดยืนยัน</span></div></div><div class="trust-item">${icon('check')}<div><b>ครบยอดแล้วต้องส่งใบเสร็จ</b><span>ผู้ขอส่งใบเสร็จให้ทีมตรวจภายใน ${RECEIPT_DAYS} วัน แล้วบิลจะขึ้นว่าจ่ายแล้ว</span></div></div></div><details class="faq"><summary>ยอดบนหน้าเว็บอัปเดตเมื่อไร ${icon('chevron')}</summary><p>เมื่อผู้ขอยืนยันว่าเงินเข้าแล้ว จึงอาจช้ากว่าเวลาที่คุณโอนเล็กน้อย ดูยอดที่ยังขาดก่อนโอนทุกครั้ง เมื่อครบยอดแล้วจะปิดรับทันที</p></details><details class="faq"><summary>ข้อมูลส่วนตัวของผู้ขอ ${icon('chevron')}</summary><p>หน้าเว็บแสดงชื่อเรียกที่ผู้ขอเลือกเอง จังหวัด และยอดบิล ไม่แสดงชื่อตามบัตรหรือที่อยู่ ตอนโอน แอปธนาคารจะแสดงชื่อบัญชีพร้อมเพย์ เพื่อให้คุณตรวจได้ว่าโอนถูกคน</p></details><details class="faq"><summary>ถ้าเห็นอะไรผิดปกติ ${icon('chevron')}</summary><p>แจ้งทีมได้ทุกเมื่อ ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง</p><a class="button outline full" href="${contactLink('report')}" data-close-on-nav>แจ้งทีม</a></details><button class="button primary full" data-close>เข้าใจแล้ว</button></div>`);
   }
   function favoritesModal() {
     const list = bills.filter(b => state.favorites.has(b.id));
-    openSupport(`<div class="modal-body"><h2 class="modal-title">บิลที่เก็บไว้</h2>${list.length ? `<div class="saved-list">${list.map(b => `<a class="saved-item" href="#/bill/${b.id}" data-close-on-nav>${categoryIcon(b)}<span><b>${safe(b.title)}</b><small>ยังขาด ${money(missing(b))}</small></span>${icon('chevron')}</a>`).join('')}</div>` : `<div class="empty-state">${icon('heart')}<p>แตะหัวใจบนบิลที่อยากกลับมาดู<br>บิลนั้นจะมาอยู่ตรงนี้</p></div>`}<button class="button outline full" data-close>ปิด</button></div>`, 'บิลที่เก็บไว้');
+    openSupport(`<div class="modal-body"><h2 class="modal-title">บิลที่เก็บไว้</h2>${list.length ? `<div class="saved-list">${list.map(b => `<a class="saved-item" href="#/bill/${b.id}" data-close-on-nav>${categoryIcon(b)}<span><b>${safe(b.title)}</b><small>ขาดอีก ${money(missing(b))}</small></span>${icon('chevron')}</a>`).join('')}</div>` : `<div class="empty-state">${icon('bookmark')}<p>แตะไอคอนเก็บบนบิลที่อยากกลับมาดู<br>บิลนั้นจะมาอยู่ตรงนี้</p></div>`}<button class="button outline full" data-close>ปิด</button></div>`, 'บิลที่เก็บไว้');
   }
   function render({focus = true, restore = false} = {}) {
     const path = route(), segments = path.split('/').filter(Boolean); let html = '', active = 'home';
@@ -331,7 +350,9 @@
     else if (path === '/bills') {html = browse(); active = 'browse';}
     else if (path === '/activity') {html = activity(); active = 'activity';}
     else if (path === '/me') {html = profile(); active = 'profile';}
-    else if (path === '/request') {html = requestView(); active = 'profile';}
+    else if (path === '/request') {html = requestView(); active = '';}
+    else if (path === '/contact') {html = contactView(); active = '';}
+    else if (path === '/contact-sent') {html = contactSent(); active = '';}
     else if (['bill', 'help', 'pay', 'thanks'].includes(segments[0]) && segments.length === 2) {
       const b = getBill(segments[1]); active = 'browse';
       if (b) html = ({bill:detail, help, pay, thanks}[segments[0]])(b);
@@ -360,10 +381,8 @@
     if (target.matches('[data-close-on-nav]')) closeSupport();
     if (target.matches('[data-help]')) {event.preventDefault(); trustModal(); return;}
     if (target.matches('[data-share]')) {shareLink(getBill(target.dataset.share)); return;}
-    if (target.matches('[data-copy]')) {copyText(target.dataset.copy, 'คัดลอกเลขแล้ว ไปวางในแอปธนาคารได้เลย'); return;}
-    if (target.matches('[data-report]')) {reportModal(); return;}
+    if (target.matches('[data-copy]')) {copyText(target.dataset.copy, 'คัดลอกเลขพร้อมเพย์แล้ว ไปวางในแอปธนาคารได้เลย'); return;}
     if (target.matches('[data-favorites]')) {favoritesModal(); return;}
-    if (target.matches('[data-bank]')) {state.bank = target.dataset.bank; persist(); const y = window.scrollY; render({focus:false}); window.scrollTo({top:y, behavior:'instant'}); return;}
     if (target.matches('[data-filter]')) {
       state.filter = target.dataset.filter;
       document.querySelectorAll('[data-filter]').forEach(el => {const on = el === target; el.classList.toggle('active', on); el.setAttribute('aria-pressed', String(on));});
@@ -380,13 +399,15 @@
     if (target.matches('[data-paid]')) {
       const b = getBill(target.dataset.paid), amount = b && state.amounts[b.id]; if (!b || !amount) return;
       state.pledges.push({billId:b.id, amount, at:new Date().toISOString()}); persist(); delete state.amounts[b.id];
-      if (contact) window.open(contact.url, '_blank', 'noopener');
       go(`/thanks/${b.id}`); return;
     }
   });
   document.addEventListener('input', event => {
     if (event.target.id === 'bill-search') {state.search = event.target.value; document.querySelector('#bills-results').innerHTML = browseCards(); hydrateIcons(); return;}
     if (event.target.id === 'custom-amount') updateAmountForm(false);
+  });
+  document.addEventListener('change', event => {
+    if (event.target.id === 'contact-topic') {const opt = document.querySelector('#contact-reply-optional'); if (opt) opt.textContent = needsContact(event.target.value) ? '' : '(ไม่บังคับ)';}
   });
   document.addEventListener('focusout', event => {if (event.target.id === 'custom-amount' && event.target.value !== '') updateAmountForm(true);});
   document.addEventListener('submit', event => {
@@ -395,6 +416,7 @@
       if (!updateAmountForm(true)) {document.querySelector('#custom-amount').focus(); return;}
       go(`/pay/${b.id}`);
     }
+    if (event.target.id === 'contact-form') {event.preventDefault(); sendContact(event.target);}
   });
   if (dialog) {
     dialog.addEventListener('click', event => {if (event.target === dialog) {const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeSupport();}});

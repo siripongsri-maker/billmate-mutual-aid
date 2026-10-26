@@ -6,11 +6,11 @@ This project was built with [Lovable](https://lovable.dev).
 
 ## คนละนิด — ช่วยกันจ่ายบิลจริง
 
-The live Thai **Konlanid (คนละนิด)** site is in [`public/konlanid/`](public/konlanid/), and the site home page (`/`) redirects there. Helpers pay the bill's provider directly from their bank app (the money never passes through the requester or the team), then send their slip to the team.
+The Thai **Konlanid (คนละนิด)** site is in [`public/konlanid/`](public/konlanid/), and the site home page (`/`) redirects there. Helpers transfer to the **requester's own PromptPay account** with a QR that has the amount filled in (any Thai bank app). The team verifies the requester's identity (ID card + selfie), that the bill is current, in their name and at most one month overdue, and that the PromptPay account name matches. Once a bill is fully funded the requester pays it and sends the receipt within 7 days.
 
-**Adding or updating a bill:** edit [`public/konlanid/data.js`](public/konlanid/data.js) — copy the commented template, fill in the real bill, commit and push. After checking slips, update `raised` and `helpers`; set `status: 'paid'` once the bill is fully paid. Set `contact.url` to the team's LINE OA or Messenger link so helpers can send slips.
+**Bills:** edit [`public/konlanid/data.js`](public/konlanid/data.js) — copy the commented template, fill in the real bill (including `pay.promptpay` and the verified `pay.accountName`), commit and push. Update `raised` and `helpers` as the requester confirms money received; set `status: 'paid'` once the receipt is checked.
 
-Only two kinds of bill are accepted: bills that can be paid in parts (test with a ฿20 payment, then set `splittable: true` — bills without it are not listed), and bills no more than one month overdue (bills over 30 days past due close automatically). Get the requester's consent for what is shown and never publish real names or addresses.
+**Contact form:** `#/contact` saves messages to the `contact_messages` table in Lovable Cloud ([migration](supabase/migrations/20261026120000_contact_messages.sql)). Anyone can send; nobody can read messages through the public API — the team reads them in Lovable Cloud.
 
 A helper's own contributions and saved bills are kept only in their browser (`localStorage`). The illustrations were generated with GPT and are included as optimized WebP files.
 
