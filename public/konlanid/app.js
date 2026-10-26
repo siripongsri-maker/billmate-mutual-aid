@@ -26,6 +26,7 @@
     info: '<circle cx="12" cy="12" r="10"/><path d="M12 11v6m0-10v.1"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    phone: '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>',
     copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
     chat: '<path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-5.6A8 8 0 1 1 21 12Z"/><path d="M8 11h8M8 14.5h5"/>',
     send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>',
@@ -35,7 +36,7 @@
   const icon = (name, extra = '') => `<svg class="${extra}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.file}</svg>`;
   const money = n => `฿${Number(n).toLocaleString('en-US')}`;
   const safe = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-  const typeIcon = {electricity:'bolt', water:'drop', car:'car', credit:'card'};
+  const typeIcon = {electricity:'bolt', water:'drop', phone:'phone', car:'car', credit:'card'};
 
   // Bills and the contact channel come from data.js, which the team edits by hand.
   const config = window.KONLANID || {};
@@ -59,7 +60,7 @@
   const scrollPositions = new Map();
   let currentHash = '', lastFocus = null, toastTimer;
   const getBill = id => bills.find(b => b.id === id);
-  const missing = b => Math.max(0, b.goal - b.raised);
+  const missing = b => Math.max(0, Math.round((b.goal - b.raised) * 100) / 100);
   const isOpen = b => b.status === 'open' && missing(b) > 0;
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
   const dueText = b => {
@@ -67,7 +68,7 @@
     const due = new Date(`${b.dueDate}T23:59:59+07:00`);
     if (Number.isNaN(due.getTime())) return '';
     const days = Math.ceil((due - Date.now()) / 86400000);
-    return days > 0 ? `เหลืออีก ${days} วัน` : 'ถึงกำหนดชำระแล้ว';
+    return days > 1 ? `เหลืออีก ${days} วัน` : days === 1 ? 'ครบกำหนดวันนี้' : 'เกินกำหนดชำระแล้ว';
   };
   const dueDate = b => {
     const d = new Date(`${b.dueDate}T12:00:00+07:00`);
@@ -172,7 +173,8 @@
   }
   function amountError(b, value) {
     const gap = missing(b), min = Math.min(20, gap);
-    if (!Number.isFinite(value) || !Number.isInteger(value)) return 'กรอกจำนวนเงินเป็นบาทเต็มจำนวน';
+    // Whole baht, except the last helper may pay the exact remainder (bills can end in satang).
+    if (!Number.isFinite(value) || (!Number.isInteger(value) && value !== gap)) return 'กรอกจำนวนเงินเป็นบาทเต็มจำนวน';
     if (value < min) return `เริ่มที่ ${money(min)} เลือกตามกำลังที่สะดวกได้`;
     if (value > gap) return `ยอดที่ยังขาดคือ ${money(gap)} ช่วยไม่เกินยอดนี้นะ`;
     return '';
@@ -181,7 +183,7 @@
     if (!isOpen(b)) return closedView(b);
     const amount = state.amounts[b.id] ?? Math.min(20, missing(b));
     const preset = [20, 50, 100].includes(amount);
-    return `<section class="view help-view">${topbar('ช่วยจ่ายคนละนิด', {back:`#/bill/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)} · ยังขาด ${money(missing(b))}</p></div><div class="help-form form-card"><h2>วันนี้อยากช่วยเท่าไร</h2><form id="help-form" data-bill="${b.id}" novalidate><div class="amount-options" role="group" aria-label="เลือกจำนวนเงิน">${[20, 50, 100].map(n => `<button class="amount-option${amount === n ? ' selected' : ''}" type="button" data-amount="${n}" ${n > missing(b) ? 'disabled' : ''} aria-pressed="${amount === n}">${money(n)}</button>`).join('')}</div><div class="form-field"><label class="field-label" for="custom-amount">หรือระบุจำนวนเอง</label><div class="amount-input"><input class="input" id="custom-amount" name="amount" type="number" inputmode="numeric" min="${Math.min(20, missing(b))}" max="${missing(b)}" step="1" value="${preset ? '' : amount}" placeholder="ระบุจำนวนอื่น" autocomplete="off" aria-describedby="amount-error" ${error ? 'aria-invalid="true"' : ''}><span aria-hidden="true">฿</span></div><p id="amount-error" class="field-error" role="alert">${error}</p></div><button type="submit" class="button coral full">ไปหน้าจ่ายบิล ${icon('arrow')}</button></form><div class="support-note">${icon('lock')}<p>เงินจ่ายตรงเข้าบิลของ ${safe(b.pay.provider || 'ผู้ให้บริการ')}<br>ไม่ผ่านบัญชีผู้ขอหรือทีม</p></div></div></div></section>`;
+    return `<section class="view help-view">${topbar('ช่วยจ่ายคนละนิด', {back:`#/bill/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)} · ยังขาด ${money(missing(b))}</p></div><div class="help-form form-card"><h2>วันนี้อยากช่วยเท่าไร</h2><form id="help-form" data-bill="${b.id}" novalidate><div class="amount-options" role="group" aria-label="เลือกจำนวนเงิน">${[20, 50, 100].map(n => `<button class="amount-option${amount === n ? ' selected' : ''}" type="button" data-amount="${n}" ${n > missing(b) ? 'disabled' : ''} aria-pressed="${amount === n}">${money(n)}</button>`).join('')}</div><div class="form-field"><label class="field-label" for="custom-amount">หรือระบุจำนวนเอง</label><div class="amount-input"><input class="input" id="custom-amount" name="amount" type="number" inputmode="decimal" min="${Math.min(20, missing(b))}" max="${missing(b)}" step="any" value="${preset ? '' : amount}" placeholder="ระบุจำนวนอื่น" autocomplete="off" aria-describedby="amount-error" ${error ? 'aria-invalid="true"' : ''}><span aria-hidden="true">฿</span></div><p id="amount-error" class="field-error" role="alert">${error}</p></div><button type="submit" class="button coral full">ไปหน้าจ่ายบิล ${icon('arrow')}</button></form><div class="support-note">${icon('lock')}<p>เงินจ่ายตรงเข้าบิลของ ${safe(b.pay.provider || 'ผู้ให้บริการ')}<br>ไม่ผ่านบัญชีผู้ขอหรือทีม</p></div></div></div></section>`;
   }
   function pay(b) {
     if (!isOpen(b)) return closedView(b);
@@ -189,8 +191,9 @@
     if (!amount || amountError(b, amount)) return help(b, amount ? amountError(b, amount) : '');
     const p = b.pay;
     return `<section class="view review-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)}</p></div><div class="help-form form-card">
-      <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${safe(p.ref || '-')}${p.ref ? ` <button class="icon-button small-icon" data-copy="${safe(p.ref)}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
-      ${p.qr ? `<img class="pay-qr" src="${safe(p.qr)}" alt="QR สำหรับจ่ายบิล ${safe(b.title)}" width="240" height="240">` : ''}
+      <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${p.private ? 'ขอจากทีมทางแชต' : safe(p.ref || '-')}${p.ref && !p.private ? ` <button class="icon-button small-icon" data-copy="${safe(p.ref)}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
+      ${p.private ? `<div class="support-note">${icon('lock')}<p>เพื่อความเป็นส่วนตัวของผู้ขอ ทีมจะส่ง${safe(p.refLabel || 'เลขสำหรับจ่าย')}ให้ทางแชต</p></div>${contactButton(`ขอ${safe(p.refLabel || 'เลขสำหรับจ่าย')}ทาง ${safe(contact?.label)}`, 'outline')}` : ''}
+      ${p.qr && !p.private ? `<img class="pay-qr" src="${safe(p.qr)}" alt="QR สำหรับจ่ายบิล ${safe(b.title)}" width="240" height="240">` : ''}
       ${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}
       <div class="support-note warm">${icon('info')}<p>ตรวจชื่อผู้รับเงินในแอปให้เป็น <b>${safe(p.provider || 'ผู้ให้บริการ')}</b> ก่อนกดยืนยัน และเก็บสลิปไว้ส่งให้ทีม</p></div>
       <button class="button coral full" data-paid="${b.id}">${contact ? `จ่ายแล้ว ส่งสลิปให้ทีม` : 'จ่ายแล้ว'} ${icon('check')}</button>
