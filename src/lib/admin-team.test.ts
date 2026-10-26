@@ -20,6 +20,11 @@ describe("roleChangeError", () => {
     expect(roleChangeError(owner, { userId: "owner-2", role: "owner" }, "requester", 1)).toBe("ต้องมีเจ้าของระบบอย่างน้อย 1 คน");
   });
 
+  it("refuses demoting another owner even when 2 owners exist", () => {
+    expect(roleChangeError(owner, { userId: "owner-2", role: "owner" }, "admin", 2)).toBe("เปลี่ยนบทบาทเจ้าของระบบผ่าน Lovable เท่านั้น");
+    expect(roleChangeError(owner, { userId: "owner-2", role: "owner" }, "requester", 2)).toBe("เปลี่ยนบทบาทเจ้าของระบบผ่าน Lovable เท่านั้น");
+  });
+
   it("refuses making someone an owner", () => {
     expect(roleChangeError(owner, { userId: "u2", role: "admin" }, "owner", 1)).toBe("เพิ่มเจ้าของระบบผ่าน Lovable เท่านั้น");
   });

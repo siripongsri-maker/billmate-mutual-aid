@@ -70,6 +70,17 @@ describe("/admin/team", () => {
     expect(screen.getByLabelText("อีเมลของคนที่จะเพิ่มเป็นแอดมิน")).toHaveValue("ghost@example.com");
   });
 
+  it("shows the owner-managed refusal beside the form when an owner's email is entered", async () => {
+    setRole.mockResolvedValue({ ok: false, message: "เปลี่ยนบทบาทเจ้าของระบบผ่าน Lovable เท่านั้น" });
+    render(<TeamPage />);
+    fireEvent.change(await screen.findByLabelText("อีเมลของคนที่จะเพิ่มเป็นแอดมิน"), { target: { value: "owner2@example.com" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "เพิ่มเป็นแอดมิน" }));
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("เปลี่ยนบทบาทเจ้าของระบบผ่าน Lovable เท่านั้น");
+    expect(screen.queryByText(/เป็นแอดมินแล้ว/)).toBeNull();
+  });
+
   it("says so and keeps the typed email when adding fails unexpectedly", async () => {
     setRole.mockRejectedValue(new Error("boom"));
     render(<TeamPage />);

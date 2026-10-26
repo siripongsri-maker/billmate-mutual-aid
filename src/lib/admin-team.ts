@@ -23,6 +23,8 @@ export type SetRoleResult = { ok: true } | { ok: false; message: string };
 
 export const OWNER_ONLY_MESSAGE = "เฉพาะเจ้าของระบบที่จัดการทีมได้";
 
+export const OWNER_MANAGED_MESSAGE = "เปลี่ยนบทบาทเจ้าของระบบผ่าน Lovable เท่านั้น";
+
 export const NOT_FOUND_MESSAGE = "ยังไม่มีบัญชีนี้ ให้เขาล็อกอินครั้งแรกก่อน";
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -44,6 +46,8 @@ export function roleChangeError(
   if (actor.role !== "owner") return OWNER_ONLY_MESSAGE;
   if (actor.userId === target.userId) return "เปลี่ยนบทบาทของตัวเองไม่ได้";
   if (target.role === "owner" && newRole !== "owner" && ownerCount <= 1) return "ต้องมีเจ้าของระบบอย่างน้อย 1 คน";
+  // Owners are managed in Lovable, never demoted from the app (even when another owner remains).
+  if (target.role === "owner") return OWNER_MANAGED_MESSAGE;
   if (newRole === "owner") return "เพิ่มเจ้าของระบบผ่าน Lovable เท่านั้น";
   return null;
 }
