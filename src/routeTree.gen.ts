@@ -22,6 +22,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
+import { Route as AdminTeamRouteImport } from './routes/admin.team'
 import { Route as BillsIdRouteImport } from './routes/bills.$id'
 import { Route as CirclesIndexRouteImport } from './routes/circles.index'
 import { Route as CirclesIdRouteImport } from './routes/circles.$id'
@@ -94,6 +95,11 @@ const AdminMessagesRoute = AdminMessagesRouteImport.update({
   path: '/messages',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTeamRoute = AdminTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminRoute,
+} as any)
 const BillsIdRoute = BillsIdRouteImport.update({
   id: '/bills/$id',
   path: '/bills/$id',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/admin/messages'
+    | '/admin/team'
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/admin/messages'
+    | '/admin/team'
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/admin/messages'
+    | '/admin/team'
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
@@ -366,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMessagesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/team': {
+      id: '/admin/team'
+      path: '/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AdminTeamRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/bills/$id': {
       id: '/bills/$id'
       path: '/bills/$id'
@@ -413,11 +432,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminMessagesRoute: typeof AdminMessagesRoute
+  AdminTeamRoute: typeof AdminTeamRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminMessagesRoute: AdminMessagesRoute,
+  AdminTeamRoute: AdminTeamRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
