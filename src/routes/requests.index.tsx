@@ -15,7 +15,7 @@ export const Route = createFileRoute("/requests/")({
   component: MyRequests,
 });
 
-export const statusStyle: Record<ReqStatus, string> = {
+const statusStyle: Record<ReqStatus, string> = {
   pending: "bg-warning-soft text-warning",
   verified: "bg-primary-soft text-accent-foreground",
   rejected: "bg-coral-soft text-destructive",

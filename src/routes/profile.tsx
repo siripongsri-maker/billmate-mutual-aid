@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useStore, type Role } from "@/lib/store";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/profile")({
 
 function Profile() {
   const s = useStore();
+  const nav = useNavigate();
   const toggle = (k: keyof typeof s.privacy) => s.set((x) => ({ ...x, privacy: { ...x.privacy, [k]: !x.privacy[k] } }));
   const roles: { id: Role; th: string; en: string; d: string }[] = [
     { id: "helper", th: "ผู้ให้", en: "Helper", d: "🤝" },
@@ -59,7 +60,7 @@ function Profile() {
         ))}
       </div>
       <Btn variant="outline" full className="mt-6" onClick={() => { s.reset(); toast.success(s.t("รีเซ็ตข้อมูลเดโมแล้ว", "Demo data reset")); }}>{s.t("รีเซ็ตข้อมูลเดโม", "Reset demo data")}</Btn>
-      <Btn variant="ghost" full className="mt-2" onClick={() => s.set((x) => ({ ...x, onboarded: false }))}>{s.t("ดูหน้าแนะนำอีกครั้ง", "Replay onboarding")}</Btn>
+      <Btn variant="ghost" full className="mt-2" onClick={() => { s.set((x) => ({ ...x, onboarded: false })); nav({ to: "/onboarding" }); }}>{s.t("ดูหน้าแนะนำอีกครั้ง", "Replay onboarding")}</Btn>
     </div>
   );
 }
