@@ -41,7 +41,9 @@
   // Bills and the contact channel come from data.js, which the team edits by hand.
   const config = window.KONLANID || {};
   const contact = config.contact && config.contact.url ? config.contact : null;
-  const bills = (config.bills || []).filter(b => b && b.id && b.title && b.goal > 0).map(b => ({raised:0, helpers:0, status:'open', pay:{}, ...b}));
+  // Only bills the team confirmed can be paid in parts are listed.
+  const bills = (config.bills || []).filter(b => b && b.id && b.title && b.goal > 0 && b.splittable === true).map(b => ({raised:0, helpers:0, status:'open', pay:{}, ...b}));
+  const OVERDUE_LIMIT_DAYS = 30;
 
   // What this browser has pledged. Kept on this device only; the public totals come from data.js.
   const STORE = 'konlanid:v1';
@@ -61,14 +63,18 @@
   let currentHash = '', lastFocus = null, toastTimer;
   const getBill = id => bills.find(b => b.id === id);
   const missing = b => Math.max(0, Math.round((b.goal - b.raised) * 100) / 100);
-  const isOpen = b => b.status === 'open' && missing(b) > 0;
+  const daysLeft = b => {
+    const due = new Date(`${b.dueDate}T23:59:59+07:00`);
+    return b.dueDate && !Number.isNaN(due.getTime()) ? Math.ceil((due - Date.now()) / 86400000) : null;
+  };
+  // Bills overdue by more than a month close automatically: service may already be cut off.
+  const tooOverdue = b => daysLeft(b) !== null && daysLeft(b) < 1 - OVERDUE_LIMIT_DAYS;
+  const isOpen = b => b.status === 'open' && missing(b) > 0 && !tooOverdue(b);
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
   const dueText = b => {
-    if (!b.dueDate) return '';
-    const due = new Date(`${b.dueDate}T23:59:59+07:00`);
-    if (Number.isNaN(due.getTime())) return '';
-    const days = Math.ceil((due - Date.now()) / 86400000);
-    return days > 1 ? `เหลืออีก ${days} วัน` : days === 1 ? 'ครบกำหนดวันนี้' : 'เกินกำหนดชำระแล้ว';
+    const days = daysLeft(b);
+    if (days === null) return '';
+    return days > 1 ? `เหลืออีก ${days} วัน` : days === 1 ? 'ครบกำหนดวันนี้' : `เกินกำหนด ${1 - days} วัน`;
   };
   const dueDate = b => {
     const d = new Date(`${b.dueDate}T12:00:00+07:00`);
@@ -115,6 +121,7 @@
   function statusPill(b) {
     if (b.status === 'paid') return `<span class="status-pill paid">${icon('check')}จ่ายครบแล้ว</span>`;
     if (b.status === 'closed') return `<span class="status-pill paused">${icon('clock')}ปิดรับแล้ว</span>`;
+    if (tooOverdue(b)) return `<span class="status-pill paused">${icon('clock')}ค้างเกิน 1 เดือน · ปิดรับ</span>`;
     if (!missing(b)) return `<span class="status-pill pending">${icon('clock')}ครบยอด · รอทีมยืนยัน</span>`;
     return b.verified ? `<span class="status-pill verified">${icon('check')}ทีมตรวจบิลแล้ว</span>` : '';
   }
@@ -127,10 +134,10 @@
   function billCard(b) {
     const gap = missing(b), fav = state.favorites.has(b.id);
     return `<article class="bill-card">
-      <div class="bill-card-top">${categoryIcon(b)}<div class="bill-card-heading"><a href="#/bill/${b.id}" class="bill-card-title">${safe(b.title)}</a><p class="bill-meta">โดย ${safe(b.alias)}<br>${safe(b.region)}</p></div><button class="icon-button bill-save${fav ? ' is-saved' : ''}" data-save="${b.id}" aria-pressed="${fav}" aria-label="${fav ? 'ยกเลิกเก็บ' : 'เก็บ'}${safe(b.title)}">${icon('heart')}</button></div>
+      <div class="bill-card-top">${categoryIcon(b)}<div class="bill-card-heading"><a href="#/bill/${b.id}" class="bill-card-title">${safe(b.title)}</a><p class="bill-meta">โดย ${safe(b.alias)}${b.region ? `<br>${safe(b.region)}` : ''}</p></div><button class="icon-button bill-save${fav ? ' is-saved' : ''}" data-save="${b.id}" aria-pressed="${fav}" aria-label="${fav ? 'ยกเลิกเก็บ' : 'เก็บ'}${safe(b.title)}">${icon('heart')}</button></div>
       <div class="bill-stats"><div><span class="amount-main">${money(gap)}</span><span class="amount-target"> / ${money(b.goal)}</span><p class="bill-meta">ยอดที่ยังขาด / ยอดบิล</p></div><span class="bill-meta">${isOpen(b) ? dueText(b) : ''}</span></div>
       ${progress(b)}
-      <div class="bill-card-bottom"><div><p class="bill-meta">ช่วยแล้ว <b>${money(b.raised)}</b> (${b.helpers} คน)</p>${statusPill(b)}</div><a class="button coral bill-card-action" href="#/bill/${b.id}">${isOpen(b) ? 'ช่วยอีกนิด' : 'ดูบิล'} ${icon('arrow')}</a></div>
+      <div class="bill-card-bottom"><div><p class="bill-meta">ช่วยแล้ว <b>${money(b.raised)}</b> (${b.helpers} คน)</p>${statusPill(b)}${isOpen(b) ? `<span class="status-pill split">แยกจ่ายได้</span>` : ''}</div><a class="button coral bill-card-action" href="#/bill/${b.id}">${isOpen(b) ? 'ช่วยอีกนิด' : 'ดูบิล'} ${icon('arrow')}</a></div>
     </article>`;
   }
   function noBills(text = 'ตอนนี้ยังไม่มีบิลที่เปิดรับ') {
@@ -147,7 +154,7 @@
   }
   function browse() {
     const types = [...new Map(bills.map(b => [b.type, b.label])).entries()];
-    return `<section class="view browse-view">${topbar('บิลที่รอเรา', {action:`<a class="icon-button" href="#/request" aria-label="ขอความช่วยเหลือ">${icon('plus')}</a>`})}${bills.length ? `<div class="browse-toolbar"><label class="search-field" for="bill-search">${icon('search')}<input class="input" id="bill-search" type="search" placeholder="ค้นหาบิล เช่น ค่าไฟ ค่าน้ำ" value="${safe(state.search)}" autocomplete="off" aria-label="ค้นหาบิล"></label>${types.length > 1 ? `<div class="filters" role="group" aria-label="ประเภทบิล">${[['all', 'ทั้งหมด'], ...types].map(([id, label]) => `<button class="filter${state.filter === id ? ' active' : ''}" data-filter="${safe(id)}" aria-pressed="${state.filter === id}">${safe(label)}</button>`).join('')}</div>` : ''}</div><p class="small-text list-context">ช่วยเท่าที่ไหว เริ่มที่ ฿20</p><div id="bills-results" class="bill-list browse-list" aria-live="polite">${browseCards()}</div>` : noBills()}</section>`;
+    return `<section class="view browse-view">${topbar('บิลที่รอเรา', {action:`<a class="icon-button" href="#/request" aria-label="ขอความช่วยเหลือ">${icon('plus')}</a>`})}${bills.length ? `<div class="browse-toolbar"><label class="search-field" for="bill-search">${icon('search')}<input class="input" id="bill-search" type="search" placeholder="ค้นหาบิล เช่น ค่าไฟ ค่าน้ำ" value="${safe(state.search)}" autocomplete="off" aria-label="ค้นหาบิล"></label>${types.length > 1 ? `<div class="filters" role="group" aria-label="ประเภทบิล">${[['all', 'ทั้งหมด'], ...types].map(([id, label]) => `<button class="filter${state.filter === id ? ' active' : ''}" data-filter="${safe(id)}" aria-pressed="${state.filter === id}">${safe(label)}</button>`).join('')}</div>` : ''}</div><p class="small-text list-context">ทุกบิลแยกจ่ายได้ · ค้างไม่เกิน 1 เดือน · เริ่มที่ ฿20</p><div id="bills-results" class="bill-list browse-list" aria-live="polite">${browseCards()}</div>` : noBills()}</section>`;
   }
   function browseCards() {
     const search = state.search.trim().toLocaleLowerCase('th');
@@ -156,14 +163,15 @@
     return shown.length ? shown.map(billCard).join('') : `<div class="empty-state">${icon('search')}<h2>ยังไม่พบบิลที่ค้นหา</h2><p>ลองใช้คำสั้น ๆ หรือเลือกดูทุกประเภท</p><button class="button soft" data-clear-search>ดูบิลทั้งหมด</button></div>`;
   }
   function howItWorks(b) {
-    return `<ol class="pay-steps"><li><b>เลือกยอดที่สบายใจ</b><span>เริ่มที่ ฿20 ไม่เกินยอดที่ยังขาด</span></li><li><b>จ่ายตรงเข้าบิล</b><span>ผ่านแอปธนาคารไปที่ ${safe(b.pay.provider || 'ผู้ให้บริการ')} เงินไม่ผ่านบัญชีผู้ขอหรือทีม</span></li><li><b>ส่งสลิปให้ทีม</b><span>ทีมตรวจแล้วอัปเดตยอดบนหน้านี้</span></li></ol>`;
+    return `<ol class="pay-steps"><li><b>เลือกยอดที่สบายใจ</b><span>เริ่มที่ ฿20 ไม่เกินยอดที่ยังขาด</span></li><li><b>จ่ายตรงเข้าบิล</b><span>ผ่านแอปธนาคารไปที่ ${safe(b.pay.provider || 'ผู้ให้บริการ')} เงินไม่ผ่านบัญชีผู้ขอหรือทีม</span></li><li><b>${contact ? 'ส่งสลิปให้ทีม' : 'ทีมเช็กยอดให้'}</b><span>${contact ? 'ทีมตรวจแล้วอัปเดตยอดบนหน้านี้' : 'ทีมเช็กยอดกับผู้ให้บริการ แล้วอัปเดตบนหน้านี้'}</span></li></ol>`;
   }
   function detail(b) {
     const gap = missing(b), open = isOpen(b), fav = state.favorites.has(b.id);
+    const splitPill = `<span class="status-pill split">${icon('users')}แยกจ่ายได้</span>`;
     const balance = `<div class="detail-balance"><span class="amount-main">${money(gap)}</span><span class="amount-target"> / ${money(b.goal)}</span><p class="bill-meta">ยอดที่ยังขาด / ยอดบิล${open && dueText(b) ? ` · ${dueText(b)}` : ''}</p></div>${progress(b)}<p class="bill-meta">ช่วยแล้ว <b>${money(b.raised)}</b> จาก ${b.helpers} คน</p>`;
     const action = open ? `<button class="button coral full" data-start-help="${b.id}">ช่วยอีกนิด เริ่ม ฿20 ${icon('heart')}</button>` : `<div class="support-note">${icon(b.status === 'paid' ? 'check' : 'clock')}<p><b>${b.status === 'paid' ? 'บิลนี้จ่ายครบแล้ว ขอบคุณทุกแรงช่วย' : b.status === 'closed' ? 'บิลนี้ปิดรับแล้ว' : 'ครบยอดแล้ว รอทีมยืนยันกับผู้ให้บริการ'}</b><br>ยังไม่ต้องจ่ายเพิ่มสำหรับบิลนี้</p></div>`;
     return `<section class="view detail-view"><div class="view-header">${backButton('#/bills', 'บิลที่รอเรา')}<div class="header-actions"><button class="icon-button" data-share="${b.id}" aria-label="บอกต่อบิลนี้">${icon('send')}</button><button class="icon-button${fav ? ' is-saved' : ''}" data-save="${b.id}" aria-pressed="${fav}" aria-label="${fav ? 'ยกเลิกเก็บ' : 'เก็บ'}บิลนี้">${icon('heart')}</button></div></div>
-      <div class="detail-layout"><div class="detail-main"><div class="detail-title"><span class="category-label">${safe(b.label)}</span><h1 class="view-title" tabindex="-1">${safe(b.title)}</h1><p class="bill-meta">โดย ${safe(b.alias)}</p><p class="bill-meta">${icon('pin')} ${safe(b.region)} ${statusPill(b)}</p></div>
+      <div class="detail-layout"><div class="detail-main"><div class="detail-title"><span class="category-label">${safe(b.label)}</span><h1 class="view-title" tabindex="-1">${safe(b.title)}</h1><p class="bill-meta">โดย ${safe(b.alias)}</p><p class="bill-meta">${b.region ? `${icon('pin')} ${safe(b.region)} ` : ''}${statusPill(b)} ${open ? splitPill : ""}</p></div>
       <div class="detail-progress">${balance}</div>
       <section class="story-section"><h2>รายละเอียด</h2><p>${safe(b.story)}</p></section>
       <section class="story-section"><h2>ช่วยยังไง</h2>${howItWorks(b)}<button class="text-link" data-help>เราดูแลความไว้ใจอย่างไร ${icon('chevron')}</button></section>
@@ -191,13 +199,13 @@
     if (!amount || amountError(b, amount)) return help(b, amount ? amountError(b, amount) : '');
     const p = b.pay;
     return `<section class="view review-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)}</p></div><div class="help-form form-card">
-      <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${p.private ? 'ขอจากทีมทางแชต' : safe(p.ref || '-')}${p.ref && !p.private ? ` <button class="icon-button small-icon" data-copy="${safe(p.ref)}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
+      <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${p.private ? 'ขอจากทีมทางแชต' : safe(p.ref || '-')}${p.ref && !p.private ? ` <button class="icon-button small-icon" data-copy="${safe(String(p.ref).replace(/[^0-9A-Za-z]/g, ''))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
       ${p.private ? `<div class="support-note">${icon('lock')}<p>เพื่อความเป็นส่วนตัวของผู้ขอ ทีมจะส่ง${safe(p.refLabel || 'เลขสำหรับจ่าย')}ให้ทางแชต</p></div>${contactButton(`ขอ${safe(p.refLabel || 'เลขสำหรับจ่าย')}ทาง ${safe(contact?.label)}`, 'outline')}` : ''}
       ${p.qr && !p.private ? `<img class="pay-qr" src="${safe(p.qr)}" alt="QR สำหรับจ่ายบิล ${safe(b.title)}" width="240" height="240">` : ''}
       ${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}
-      <div class="support-note warm">${icon('info')}<p>ตรวจชื่อผู้รับเงินในแอปให้เป็น <b>${safe(p.provider || 'ผู้ให้บริการ')}</b> ก่อนกดยืนยัน และเก็บสลิปไว้ส่งให้ทีม</p></div>
+      <div class="support-note warm">${icon('info')}<p>ตรวจชื่อผู้รับเงินในแอปให้เป็น <b>${safe(p.provider || 'ผู้ให้บริการ')}</b> ก่อนกดยืนยัน และเก็บสลิปไว้${contact ? 'ส่งให้ทีม' : 'เป็นหลักฐาน'}</p></div>
       <button class="button coral full" data-paid="${b.id}">${contact ? `จ่ายแล้ว ส่งสลิปให้ทีม` : 'จ่ายแล้ว'} ${icon('check')}</button>
-      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีมตรวจสลิปแล้ว</p></div></div></section>`;
+      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p></div></div></section>`;
   }
   function closedView(b) {
     return `<section class="view">${topbar('บิลนี้ไม่ต้องช่วยเพิ่มแล้ว', {back:`#/bill/${b.id}`})}<div class="empty-state">${icon(b.status === 'paid' ? 'check' : 'clock')}<h2>${b.status === 'paid' ? 'จ่ายครบแล้ว ขอบคุณทุกแรงช่วย' : 'ครบยอดหรือปิดรับแล้ว'}</h2><p>ลองดูบิลอื่นที่ยังรอเราอยู่ได้เลย</p><a class="button primary" href="#/bills">ดูบิลที่รอเรา</a></div></section>`;
@@ -221,7 +229,7 @@
     return `<section class="view profile-view">${topbar('พื้นที่ของฉัน')}<div class="profile-layout"><div><div class="profile-card"><div class="profile-avatar">${icon('heart')}</div><h2>เพื่อนคนละนิด</h2><p class="muted">วันนี้เป็นผู้ให้ วันหน้าอาจเป็นผู้รับ</p><div class="profile-stats"><div><b>${state.pledges.length}</b><span>ครั้งที่ช่วย</span></div><div><b>${unique}</b><span>บิลที่ช่วย</span></div><div><b>${money(total)}</b><span>ยอดที่ช่วย</span></div></div><p class="small-text">นับจากที่คุณกด "จ่ายแล้ว" บนเครื่องนี้ ไม่ต้องสมัครสมาชิก</p></div></div><div class="profile-menu"><a href="#/activity">${icon('clock')}<span>ประวัติการช่วยเหลือ</span>${icon('chevron')}</a><button data-favorites>${icon('heart')}<span>บิลที่เก็บไว้ <small>(${state.favorites.size})</small></span>${icon('chevron')}</button><a href="#/request">${icon('send')}<span>ขอความช่วยเหลือ หรือส่งต่อให้คนที่ต้องการ</span>${icon('chevron')}</a><button data-help>${icon('shield')}<span>ความไว้ใจและความเป็นส่วนตัว</span>${icon('chevron')}</button>${contact ? `<a href="${safe(contact.url)}" target="_blank" rel="noopener noreferrer">${icon('chat')}<span>ติดต่อทีมคนละนิด</span>${icon('chevron')}</a>` : ''}</div></div></section>`;
   }
   function requestView() {
-    return `<section class="view request-view">${topbar('ส่งต่อคนละนิด')}<div class="request-layout"><div class="request-intro"><span class="category-icon electricity">${icon('send')}</span><h2>วันนี้รับแรงช่วย<br>วันหน้าอาจส่งต่อ</h2><p>ถ้าคุณหรือคนที่คุณรู้จักกำลังติดขัดเรื่องบิลจำเป็น<br>ส่งเรื่องมาให้ทีมได้ ไม่ต้องเปิดหน้า และไม่ต้องคืนเงินให้ผู้ช่วย</p></div><div class="form-card request-card"><h2>เตรียมอะไรบ้าง</h2><ul class="pay-how"><li>รูปบิลตัวจริงรอบล่าสุด (ค่าไฟ ค่าน้ำ หรือบิลจำเป็นอื่น)</li><li>ความเกี่ยวข้องกับบิล เช่น เป็นเจ้าของบัญชี ผู้เช่า หรือคนในครอบครัว</li><li>เล่าสั้น ๆ ว่าตอนนี้ติดขัดเรื่องอะไร เท่าที่สบายใจ</li></ul><div class="support-note">${icon('shield')}<p>ทีมดูบิลกับคุณเป็นการส่วนตัวก่อนเปิดรับ หน้าเว็บแสดงแค่ชื่อเรียก จังหวัด และยอดบิล ไม่แสดงชื่อจริงหรือที่อยู่</p></div>${contact ? contactButton(`ส่งเรื่องทาง ${safe(contact.label)}`) : `<p class="small-text">ช่องทางติดต่อทีมจะเปิดเร็ว ๆ นี้</p>`}</div></div></section>`;
+    return `<section class="view request-view">${topbar('ส่งต่อคนละนิด')}<div class="request-layout"><div class="request-intro"><span class="category-icon electricity">${icon('send')}</span><h2>วันนี้รับแรงช่วย<br>วันหน้าอาจส่งต่อ</h2><p>ถ้าคุณหรือคนที่คุณรู้จักกำลังติดขัดเรื่องบิลจำเป็น<br>ส่งเรื่องมาให้ทีมได้ ไม่ต้องเปิดหน้า และไม่ต้องคืนเงินให้ผู้ช่วย</p></div><div class="form-card request-card"><h2>เตรียมอะไรบ้าง</h2><ul class="pay-how"><li>รูปบิลตัวจริงรอบล่าสุด (ค่าไฟ ค่าน้ำ ค่ามือถือ หรือบิลจำเป็นอื่น)</li><li>บิลต้อง<b>แยกจ่ายทีละส่วนได้</b> และ<b>ค้างชำระไม่เกิน 1 เดือน</b> ไม่แน่ใจ ทีมช่วยเช็กให้</li><li>ความเกี่ยวข้องกับบิล เช่น เป็นเจ้าของบัญชี ผู้เช่า หรือคนในครอบครัว</li><li>เล่าสั้น ๆ ว่าตอนนี้ติดขัดเรื่องอะไร เท่าที่สบายใจ</li></ul><div class="support-note">${icon('shield')}<p>ทีมดูบิลกับคุณเป็นการส่วนตัวก่อนเปิดรับ หน้าเว็บแสดงแค่ชื่อเรียก จังหวัด และยอดบิล ไม่แสดงชื่อจริงหรือที่อยู่</p></div>${contact ? contactButton(`ส่งเรื่องทาง ${safe(contact.label)}`) : `<p class="small-text">ช่องทางติดต่อทีมจะเปิดเร็ว ๆ นี้</p>`}</div></div></section>`;
   }
   function openSupport(html, title = 'คนละนิด · ความไว้ใจ') {
     if (!dialog || !support) return;
@@ -233,7 +241,7 @@
   }
   function closeSupport() {if (dialog?.open) dialog.close();}
   function trustModal() {
-    openSupport(`<div class="modal-body"><h2 class="modal-title">ช่วยกันอย่างไว้ใจได้</h2><div class="trust-checks"><div class="trust-item">${icon('file')}<div><b>ทีมดูบิลตัวจริงก่อนเปิดรับ</b><span>คุยกับผู้ขอและตรวจยอดกับบิลรอบล่าสุด</span></div></div><div class="trust-item">${icon('lock')}<div><b>จ่ายตรงเข้าบิล</b><span>เงินไปที่ผู้ให้บริการโดยตรง ไม่ผ่านบัญชีผู้ขอหรือทีม</span></div></div><div class="trust-item">${icon('eye')}<div><b>เปิดเผยเท่าที่จำเป็น</b><span>แสดงชื่อเรียก จังหวัด ยอดบิล และเลขสำหรับจ่ายเท่านั้น</span></div></div></div><details class="faq"><summary>ยอดบนหน้าเว็บอัปเดตเมื่อไร ${icon('chevron')}</summary><p>ทีมอัปเดตหลังตรวจสลิปที่ส่งมา จึงอาจช้ากว่ายอดจริงเล็กน้อย ดูยอดที่ยังขาดก่อนจ่ายทุกครั้ง เมื่อครบแล้วทีมจะปิดรับทันที</p></details><details class="faq"><summary>ถ้าเห็นอะไรผิดปกติ ${icon('chevron')}</summary><p>${contact ? `แจ้งทีมได้ทาง ${safe(contact.label)} ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง` : 'แจ้งทีมได้ตลอด ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง'}</p></details><button class="button primary full" data-close>เข้าใจแล้ว</button></div>`);
+    openSupport(`<div class="modal-body"><h2 class="modal-title">ช่วยกันอย่างไว้ใจได้</h2><div class="trust-checks"><div class="trust-item">${icon('file')}<div><b>ทีมดูบิลตัวจริงก่อนเปิดรับ</b><span>คุยกับผู้ขอและตรวจยอดกับบิลรอบล่าสุด</span></div></div><div class="trust-item">${icon('lock')}<div><b>จ่ายตรงเข้าบิล</b><span>เงินไปที่ผู้ให้บริการโดยตรง ไม่ผ่านบัญชีผู้ขอหรือทีม</span></div></div><div class="trust-item">${icon('check')}<div><b>รับเฉพาะบิลที่แยกจ่ายได้</b><span>และค้างชำระไม่เกิน 1 เดือน ค้างนานกว่านั้นระบบปิดรับเอง</span></div></div><div class="trust-item">${icon('eye')}<div><b>เปิดเผยเท่าที่จำเป็น</b><span>แสดงชื่อเรียก จังหวัด ยอดบิล และเลขสำหรับจ่ายเท่านั้น</span></div></div></div><details class="faq"><summary>ยอดบนหน้าเว็บอัปเดตเมื่อไร ${icon('chevron')}</summary><p>ทีมอัปเดตหลังตรวจสลิปที่ส่งมา จึงอาจช้ากว่ายอดจริงเล็กน้อย ดูยอดที่ยังขาดก่อนจ่ายทุกครั้ง เมื่อครบแล้วทีมจะปิดรับทันที</p></details><details class="faq"><summary>ถ้าเห็นอะไรผิดปกติ ${icon('chevron')}</summary><p>${contact ? `แจ้งทีมได้ทาง ${safe(contact.label)} ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง` : 'แจ้งทีมได้ตลอด ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง'}</p></details><button class="button primary full" data-close>เข้าใจแล้ว</button></div>`);
   }
   function reportModal() {
     openSupport(`<div class="modal-body"><h2 class="modal-title">เห็นอะไรผิดปกติ บอกทีมได้เลย</h2><p class="muted">เช่น บิลซ้ำ จ่ายไปแล้ว เลขอ้างอิงแปลก หรือมีคนชวนให้โอนนอกระบบ ทีมจะพักบิลไว้ระหว่างตรวจ และไม่เปิดเผยชื่อผู้แจ้ง</p>${contact ? contactButton(`แจ้งทีมทาง ${safe(contact.label)}`) : ''}<button class="button outline full" data-close>ปิด</button></div>`, 'แจ้งทีม');

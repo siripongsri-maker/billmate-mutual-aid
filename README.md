@@ -10,7 +10,7 @@ The live Thai **Konlanid (คนละนิด)** site is in [`public/konlanid/
 
 **Adding or updating a bill:** edit [`public/konlanid/data.js`](public/konlanid/data.js) — copy the commented template, fill in the real bill, commit and push. After checking slips, update `raised` and `helpers`; set `status: 'paid'` once the bill is fully paid. Set `contact.url` to the team's LINE OA or Messenger link so helpers can send slips.
 
-Before opening a bill: get the requester's consent for what is shown, never publish real names or addresses, and confirm with the provider that the bill accepts partial payments through the channel you list.
+Only two kinds of bill are accepted: bills that can be paid in parts (test with a ฿20 payment, then set `splittable: true` — bills without it are not listed), and bills no more than one month overdue (bills over 30 days past due close automatically). Get the requester's consent for what is shown and never publish real names or addresses.
 
 A helper's own contributions and saved bills are kept only in their browser (`localStorage`). The illustrations were generated with GPT and are included as optimized WebP files.
 
