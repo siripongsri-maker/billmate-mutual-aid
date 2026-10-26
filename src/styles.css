@@ -103,3 +103,113 @@
   &:active { transform: scale(.96); }
 }
 @utility font-display { font-family: var(--font-display); }
+
+/* ---------- คนละนิด (konlanid) design tokens + shell ----------
+   Scoped under .kl so the older demo pages are unaffected. Token values come from
+   public/konlanid/style.css. Contrast of every text/background pair is >= 4.5:1. */
+.kl {
+  --kl-cream: #fffaf0;
+  --kl-paper: #fffdf7;
+  --kl-warm: #f6eedf;
+  --kl-ink: #173f35;
+  --kl-green: #226f55;
+  --kl-deep: #154f40;
+  --kl-sage: #e5efda;
+  --kl-coral: #f79498;
+  --kl-coral-light: #fde6df;
+  --kl-coral-ink: #633036;
+  --kl-yellow: #ffda7a;
+  --kl-yellow-light: #fff1c7;
+  --kl-muted: #5f6359;
+  --kl-border: #e9e2d3;
+  --kl-font-body: "Noto Sans Thai", "Thonburi", system-ui, sans-serif;
+  --kl-font-display: "Mali", "Noto Sans Thai", system-ui, sans-serif;
+
+  min-height: 100vh;
+  background: var(--kl-cream);
+  color: var(--kl-ink);
+  font-family: var(--kl-font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+.kl *, .kl *::before, .kl *::after { border-color: var(--kl-border); }
+.kl h1, .kl h2, .kl h3 {
+  font-family: var(--kl-font-display);
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 0;
+  text-wrap: balance;
+}
+.kl h1 { font-size: 28px; }
+.kl h2 { font-size: 22px; }
+.kl h3 { font-size: 18px; font-weight: 600; }
+.kl p { margin: 0; }
+.kl a { color: var(--kl-green); }
+.kl :focus-visible {
+  outline: 3px solid var(--kl-green);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.kl-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: var(--kl-paper);
+  border-bottom: 1px solid var(--kl-border);
+}
+.kl-main { max-width: 960px; margin: 0 auto; padding: 24px 20px 56px; }
+
+.kl-logo-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 45px;
+  height: 45px;
+  padding: 0 4px 4px 0;
+  border-radius: 15px;
+  background: linear-gradient(140deg, #ffe393, #ffd46e);
+  box-shadow: 0 3px 6px #b88d3220;
+  color: var(--kl-deep);
+  font: 700 26px/1 var(--kl-font-display);
+  letter-spacing: -2px;
+}
+.kl-logo-tile > span {
+  position: absolute;
+  right: 5px;
+  bottom: 9px;
+  color: #a98253; /* decorative dot only, not text */
+  font-size: 21px;
+  letter-spacing: 0;
+}
+
+.kl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 12px 2px 9px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.kl-pill svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* text on background: 10.37 / 7.95 / 6.05 / 5.33 / 8.75 : 1 */
+.kl-pill--new { background: var(--kl-yellow-light); color: var(--kl-ink); }
+.kl-pill--progress { background: var(--kl-sage); color: var(--kl-deep); }
+.kl-pill--done { background: var(--kl-green); color: #fff; }
+.kl-pill--muted { background: var(--kl-warm); color: var(--kl-muted); }
+.kl-pill--danger { background: var(--kl-coral-light); color: var(--kl-coral-ink); }
