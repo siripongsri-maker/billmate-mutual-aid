@@ -8,7 +8,7 @@ This project was built with [Lovable](https://lovable.dev).
 
 The standalone Thai **Konlanid (คนละนิด)** concept is in [`public/konlanid/`](public/konlanid/). It includes the warm illustrated interface, bill discovery and detail screens, amount selection and review, contribution tracking, a sample request flow, and reporting/pause states.
 
-With the development server running, open **`/konlanid/index.html`**. You can also open `public/konlanid/index.html` directly in a browser. Keep `style.css`, `app.js`, and the `assets/` folder alongside it.
+The site home page (`/`) now redirects here. With the development server running, open **`/`** or **`/konlanid/index.html`**. You can also open `public/konlanid/index.html` directly in a browser. Keep `style.css`, `app.js`, and the `assets/` folder alongside it.
 
 All people, bills, verification, contributions, and payment confirmations are fictional demo data. There are no real payments, identity checks, document uploads, or biller integrations. Demo changes live in memory and reset when the page reloads. The transparent illustrations were generated with GPT and are included as optimized WebP files.
 

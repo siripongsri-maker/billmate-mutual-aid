@@ -28,7 +28,10 @@
     info: '<circle cx="12" cy="12" r="10"/><path d="M12 11v6m0-10v.1"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
-    return: '<path d="m8 3-5 5 5 5M3 8h11a7 7 0 0 1 0 14h-3"/>'
+    return: '<path d="m8 3-5 5 5 5M3 8h11a7 7 0 0 1 0 14h-3"/>',
+    send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>',
+    megaphone: '<path d="M3 11v3a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M17 8a5 5 0 0 1 0 8M7 15l1.5 5h3L10 16"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2 21v-1.5A5.5 5.5 0 0 1 7.5 14h3a5.5 5.5 0 0 1 5.5 5.5V21"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a5 5 0 0 1 4 5v2"/>'
   };
   const icon = (name, extra = '') => `<svg class="${extra}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.file}</svg>`;
   const money = n => `฿${n.toLocaleString('en-US')}`;
@@ -78,7 +81,7 @@
   const state = {
     bills: initialBills.map(b => ({...b})), contributions:[], requests:[], favorites:new Set(), paused:new Set(),
     drafts:{}, filter:'all', search:'', proofStage:0, requestStep:0,
-    requestDraft:{type:'electricity', relation:'self'}, lastReceipt:null, notifications:[], anonymous:true
+    requestDraft:{type:'electricity', relation:'self'}, lastReceipt:null, notifications:[], anonymous:true, shares:0
   };
   const app = document.querySelector('#app');
   const dialog = document.querySelector('#support-dialog');
@@ -97,6 +100,20 @@
     if (!el) return;
     el.textContent = message; el.classList.add('show');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+  async function shareApp() {
+    const url=location.href.split('#')[0];
+    const data={title:'คนละนิด',text:'ไม่ต้องมีมาก แค่ช่วยกันคนละนิด ก็แบ่งเบาบิลของใครอีกคนได้',url};
+    try {
+      if (navigator.share) await navigator.share(data);
+      else await navigator.clipboard.writeText(`${data.text} ${url}`);
+    } catch (error) {
+      if (error && error.name === 'AbortError') return;
+      openSupport(`<div class="modal-body"><p class="eyebrow">บอกต่อคนละนิด</p><h2 class="modal-title">ส่งลิงก์นี้ให้เพื่อนได้เลย</h2><p class="muted">${data.text}</p><input class="input" readonly value="${safe(url)}" aria-label="ลิงก์คนละนิด" onfocus="this.select()"><button class="button primary full" data-close>เรียบร้อย</button></div>`,'บอกต่อคนละนิด');
+      return;
+    }
+    state.shares++;
+    toast(navigator.share ? 'ขอบคุณที่บอกต่อคนละนิด' : 'คัดลอกลิงก์แล้ว ส่งต่อให้เพื่อนได้เลย');
   }
   function go(path) {
     if (route() === path) {render(); return;}
@@ -128,7 +145,7 @@
   function home() {
     return `<section class="view home-view"><header class="view-header home-header"><div class="mobile-brand"><span class="mini-brand-mark">นิด<span>.</span></span><span class="mobile-brand-name">คนละนิด</span></div><button class="icon-button" data-notifications aria-label="การแจ้งเตือน">${icon('bell')}${state.notifications.length ? '<span class="notification-dot"></span>' : ''}</button></header>
       <div class="home-layout"><div class="home-hero"><p class="eyebrow">A LITTLE FROM EACH OF US.</p><h1 class="view-title home-title" tabindex="-1">วันนี้<br>ช่วยกันคนละนิดไหม?</h1><p class="home-description">ไม่ต้องมีมาก แค่ช่วยกันคนละนิด<br>ก็แบ่งเบาบิลของใครอีกคนได้</p><img class="home-art" src="assets/helping-hand.webp" width="720" height="480" alt="ภาพวาดมือประคองหัวใจ สื่อถึงการแบ่งปัน" fetchpriority="high"><a class="button primary hero-cta" href="#/bills">ช่วยจ่ายคนละนิด ${icon('arrow')}</a>
-      <div class="quick-actions"><a class="quick-action" href="#/request"><span class="quick-icon yellow">${icon('file')}</span><span>ขอให้ช่วย<br>แบ่งเบาบิล</span></a><a class="quick-action" href="#/activity"><span class="quick-icon pink">${icon('heart')}</span><span>ตามดู<br>รอยต่อการช่วย</span></a><button class="quick-action" data-help><span class="quick-icon mint">${icon('shield')}</span><span>ดูแล<br>ความไว้ใจ</span></button></div></div>
+      <div class="quick-actions"><a class="quick-action" href="#/bills"><span class="quick-icon pink">${icon('heart')}</span><span>ช่วยจ่าย<br>คนละนิด</span></a><a class="quick-action" href="#/request"><span class="quick-icon yellow">${icon('send')}</span><span>ส่งต่อ<br>คนละนิด</span></a><button class="quick-action" data-share><span class="quick-icon coral">${icon('megaphone')}</span><span>บอกต่อ<br>คนละนิด</span></button><a class="quick-action" href="#/activity"><span class="quick-icon mint">${icon('users')}</span><span>รวมกัน<br>คนละนิด</span></a></div></div>
       <div class="home-bills"><div class="section-label"><div><p class="eyebrow">SMALL HELP. REAL DIRECTION.</p><h2>บิลเล็ก ๆ ที่รอเรา</h2></div><a class="text-link" href="#/bills">ดูทั้งหมด ${icon('chevron')}</a></div><div class="bill-list">${billCard(state.bills[0], true)}${billCard(state.bills[1], true)}</div><div class="support-note">${icon('lock')}<p><b>มีปลายทางให้ติดตาม</b><br>รวมยอดแล้วจ่ายตรงผู้รับบิลที่ตรวจไว้<br>ติดตามจนผู้รับชำระยืนยันผล</p></div><p class="small-text demo-caption">เคส ยอด และผลการตรวจทั้งหมดเป็นข้อมูลสมมติ</p></div></div>
       <div class="value-banner"><span class="value-symbol">${icon('leaf')}</span><div><h2>คนละนิด ไม่ใช่จำนวนเงิน</h2><p>แต่คือสิ่งที่เราทำให้กันได้ · ให้เท่าที่ไหว ไม่มีภาระต้องตอบแทน</p></div></div>
     </section>`;
@@ -211,7 +228,7 @@
   }
   function profile() {
     const total=state.contributions.reduce((n,c)=>n+c.amount,0),unique=new Set(state.contributions.map(c=>c.billId)).size;
-    return `<section class="view profile-view">${topbar('พื้นที่ของฉัน',{action:`<button class="icon-button" data-settings aria-label="ตั้งค่าพื้นที่ทดลอง">${icon('settings')}</button>`})}<div class="profile-layout"><div><div class="profile-card"><div class="profile-avatar">${icon('user')}</div><h2>เพื่อนคนละนิด</h2><p class="muted">วันนี้เป็นผู้ให้ วันหน้าอาจเป็นผู้รับ</p><span class="demo-pill">พื้นที่ทดลอง · ไม่มีบัญชีจริง</span><div class="profile-stats"><div><b>${state.contributions.length}</b><span>ครั้งที่ช่วย</span></div><div><b>${unique}</b><span>บิลที่ร่วมช่วย</span></div><div><b>${money(total)}</b><span>แรงช่วยรวม</span></div></div></div><div class="value-banner"><span class="value-symbol">${icon('leaf')}</span><div><h2>รอยต่อของน้ำใจ</h2><p>ให้เท่าที่ไหว ไม่มีอันดับผู้ให้<br>และไม่มีภาระต้องตอบแทน</p></div></div></div><div class="profile-menu"><a href="#/activity">${icon('clock')}<span>ประวัติและความคืบหน้าการช่วย</span>${icon('chevron')}</a><button data-my-requests>${icon('file')}<span>คำขอช่วยบิลของฉัน <small>${state.requests.length?`(${state.requests.length})`:''}</small></span>${icon('chevron')}</button><button data-favorites>${icon('heart')}<span>บิลที่เก็บไว้ <small>(${state.favorites.size})</small></span>${icon('chevron')}</button><a href="#/request">${icon('plus')}<span>ลองขอให้ช่วยแบ่งเบาบิล</span>${icon('chevron')}</a><button data-help>${icon('shield')}<span>ความไว้ใจและความเป็นส่วนตัว</span>${icon('chevron')}</button><button data-settings>${icon('settings')}<span>ตั้งค่าพื้นที่ทดลอง</span>${icon('chevron')}</button><p class="small-text">ยอดและรายการคงอยู่เฉพาะระหว่างเปิดหน้านี้<br>รีเฟรชแล้วจะกลับเป็นข้อมูลเริ่มต้น ไม่มีข้อมูลส่งไปภายนอก</p></div></div></section>`;
+    return `<section class="view profile-view">${topbar('พื้นที่ของฉัน',{action:`<button class="icon-button" data-settings aria-label="ตั้งค่าพื้นที่ทดลอง">${icon('settings')}</button>`})}<div class="profile-layout"><div><div class="profile-card"><div class="profile-avatar" aria-hidden="true">น</div><h2>น้ำ <span class="profile-heart">${icon('heart')}</span></h2><p class="muted">สมาชิกคนละนิด ตั้งแต่ ม.ค. 2569</p><span class="demo-pill">ชื่อและสถิติตัวอย่าง · ไม่มีบัญชีจริง</span><div class="profile-stats"><div><b>${24+state.contributions.length}</b><span>ครั้งที่ช่วย</span></div><div><b>3</b><span>ครั้งที่ได้รับ</span></div><div><b>${12+state.shares}</b><span>ครั้งที่บอกต่อ</span></div></div><p class="small-text">รอบทดลองนี้คุณช่วยแล้ว ${money(total)} ใน ${unique} บิล</p></div><div class="value-banner"><span class="value-symbol">${icon('leaf')}</span><div><h2>รอยต่อของน้ำใจ</h2><p>ทุกการช่วยเหลือ สร้างการเปลี่ยนแปลงได้<br>ให้เท่าที่ไหว ไม่มีภาระต้องตอบแทน</p></div></div></div><div class="profile-menu"><a href="#/activity">${icon('clock')}<span>ประวัติการช่วยเหลือ</span>${icon('chevron')}</a><button data-my-requests>${icon('file')}<span>บิลของฉัน <small>${state.requests.length?`(${state.requests.length})`:''}</small></span>${icon('chevron')}</button><button data-favorites>${icon('heart')}<span>บิลที่เก็บไว้ <small>(${state.favorites.size})</small></span>${icon('chevron')}</button><a href="#/request">${icon('plus')}<span>ลองขอให้ช่วยแบ่งเบาบิล</span>${icon('chevron')}</a><button data-help>${icon('shield')}<span>ความไว้ใจและความเป็นส่วนตัว</span>${icon('chevron')}</button><button data-settings>${icon('settings')}<span>ตั้งค่าพื้นที่ทดลอง</span>${icon('chevron')}</button><p class="small-text">ยอดและรายการคงอยู่เฉพาะระหว่างเปิดหน้านี้<br>รีเฟรชแล้วจะกลับเป็นข้อมูลเริ่มต้น ไม่มีข้อมูลส่งไปภายนอก</p></div></div></section>`;
   }
   function requestProgress(step) {
     return `<div class="request-progress" aria-label="ขั้นตอน ${Math.min(step+1,3)} จาก 3">${[0,1,2].map(i=>`<span class="${i<=step?'active':''}"></span>`).join('')}</div>`;
@@ -265,7 +282,7 @@
     openSupport(`<div class="modal-body"><h2 class="modal-title">พื้นที่ทดลองของคุณ</h2><p>ต้นแบบนี้ใช้ข้อมูลสมมติทั้งหมด ไม่มีบัญชีผู้ใช้ การตรวจตัวตน การรับเงินจริง หรือการอัปโหลดเอกสารจริง</p><div class="summary-box"><div class="summary-row"><span>รายการช่วยในหน้านี้</span><b>${state.contributions.length} รายการ</b></div><div class="summary-row"><span>คำขอรอตรวจ</span><b>${state.requests.length} รายการ</b></div><div class="summary-row"><span>บิลที่พักตรวจ</span><b>${state.paused.size} บิล</b></div></div><p class="small-text">รีเฟรชแล้วสถานะทั้งหมดจะกลับเริ่มต้น<br>หรือล้างได้จากปุ่มด้านล่าง</p><button class="button outline full" data-reset-ask>ล้างสถานะตัวอย่าง</button><button class="button primary full" data-close>กลับไปใช้งาน</button></div>`,'ตั้งค่าพื้นที่ทดลอง');
   }
   function resetState() {
-    state.bills=initialBills.map(b=>({...b}));state.contributions=[];state.requests=[];state.favorites.clear();state.paused.clear();state.drafts={};state.filter='all';state.search='';state.proofStage=0;state.requestStep=0;state.requestDraft={type:'electricity',relation:'self'};state.lastReceipt=null;state.notifications=[];
+    state.bills=initialBills.map(b=>({...b}));state.contributions=[];state.requests=[];state.favorites.clear();state.paused.clear();state.drafts={};state.filter='all';state.search='';state.proofStage=0;state.requestStep=0;state.requestDraft={type:'electricity',relation:'self'};state.lastReceipt=null;state.notifications=[];state.shares=0;
     closeSupport();go('/');toast('กลับสู่ข้อมูลตัวอย่างเริ่มต้นแล้ว');
   }
   function render({focus=true, restore=false}={}) {
@@ -316,6 +333,7 @@
     if(target.matches('[data-close-on-nav]'))closeSupport();
     if(target.matches('[data-new-request-link]')){event.preventDefault();state.requestStep=0;go('/request');return;}
     if(target.matches('[data-help]')){event.preventDefault();trustModal();return;}
+    if(target.matches('[data-share]')){shareApp();return;}
     if(target.matches('[data-notifications]')){notificationsModal();return;}
     if(target.matches('[data-filter]')){
       state.filter=target.dataset.filter;

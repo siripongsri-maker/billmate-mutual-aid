@@ -20,3 +20,7 @@
 /* Fixed bill actions stay attached to the viewport during route transitions. */
 .detail-view{transform:none!important}
 .view{animation-fill-mode:backwards}
+/* Home tiles and profile follow the คนละนิด brand board. */
+.quick-actions{grid-template-columns:1fr 1fr}.quick-action{flex-direction:row;text-align:left;justify-content:flex-start}.quick-action>span:last-child{line-height:1.45}.quick-action:nth-child(3)>span:first-child{background:var(--coral-light);color:var(--coral-ink)}.quick-action:nth-child(4)>span:first-child{background:var(--sage);color:var(--green)}
+.view-title:focus:not(:focus-visible),.view-title[tabindex="-1"]:focus{outline:none}
+.profile-avatar{font:700 34px var(--display);color:#a3783c}.profile-heart{display:inline-flex;vertical-align:middle;color:#e9737e}.profile-heart svg{width:20px;height:20px;fill:currentColor}
