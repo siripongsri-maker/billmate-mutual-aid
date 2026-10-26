@@ -4,6 +4,7 @@ import { Btn, Empty, PageHeader } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/notifications")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "Notifications — chuaykan" },
     { name: "description", content: "Your chuaykan demo notifications." },

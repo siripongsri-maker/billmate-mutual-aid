@@ -6,6 +6,7 @@ import { STATUS_LABELS } from "@/lib/admin-messages";
 import { getAdminOverview, type AdminOverview } from "@/lib/admin-overview.functions";
 
 export const Route = createFileRoute("/admin/")({
+  staticData: { sitemap: false },
   component: AdminOverviewPage,
 });
 

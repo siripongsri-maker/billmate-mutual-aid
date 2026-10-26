@@ -6,6 +6,7 @@ import { categories, fmt } from "@/lib/data";
 import { Btn, Empty, getBill, PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/moderator")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "Moderator dashboard — chuaykan" },
     { name: "description", content: "Demo verification queue, dispute flags and metrics." },

@@ -5,6 +5,7 @@ import { describeAction, type AuditItem } from "@/lib/admin-log";
 import { listAudit } from "@/lib/admin-log.functions";
 
 export const Route = createFileRoute("/admin/log")({
+  staticData: { sitemap: false },
   component: AuditLog,
 });
 

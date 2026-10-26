@@ -4,6 +4,7 @@ import { categories, fmt } from "@/lib/data";
 import { Empty, getBill, PageHeader, Progress } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/impact")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "My footprint — chuaykan" },
     { name: "description", content: "Your simulated giving footprint and impact receipts." },

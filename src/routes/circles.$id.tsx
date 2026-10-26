@@ -5,6 +5,7 @@ import { bills, circles, fmt } from "@/lib/data";
 import { BillCard, Btn, Empty, PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/circles/$id")({
+  staticData: { sitemap: false },
   loader: ({ params }) => { const c = circles.find((x) => x.id === params.id); if (!c) throw notFound(); return { name: c.name.en }; },
   head: ({ loaderData }) => ({ meta: [
     { title: `${loaderData?.name ?? "Circle"} — chuaykan` },

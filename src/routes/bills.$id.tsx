@@ -6,6 +6,7 @@ import { categories, fmt } from "@/lib/data";
 import { DemoBadge, getBill, PageHeader, Progress, useRaised } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/bills/$id")({
+  staticData: { sitemap: false },
   loader: ({ params }) => { const b = getBill(params.id); if (!b) throw notFound(); return { title: b.title.en }; },
   head: ({ loaderData }) => ({ meta: [
     { title: `${loaderData?.title ?? "Bill"} — chuaykan` },

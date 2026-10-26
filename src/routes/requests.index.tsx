@@ -6,6 +6,7 @@ import { Empty, PageHeader } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/requests/")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "My requests — chuaykan" },
     { name: "description", content: "Track the status of your help requests (demo)." },
