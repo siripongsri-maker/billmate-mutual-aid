@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/bills/$id_/contribute")({
   loader: ({ params }) => { if (!getBill(params.id)) throw notFound(); return null; },
   head: () => ({ meta: [
-    { title: "Chip in (simulated) — billmate" },
+    { title: "Chip in (simulated) — chuaykan" },
     { name: "description", content: "Simulated contribution flow. No real payment is taken." },
-    { property: "og:title", content: "Chip in — billmate demo" },
+    { property: "og:title", content: "Chip in — chuaykan demo" },
     { property: "og:description", content: "Simulated contribution flow, no payments." },
   ] }),
   component: Contribute,

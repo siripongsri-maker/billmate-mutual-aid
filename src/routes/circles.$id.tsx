@@ -7,9 +7,9 @@ import { BillCard, Btn, Empty, PageHeader } from "@/components/ui-kit";
 export const Route = createFileRoute("/circles/$id")({
   loader: ({ params }) => { const c = circles.find((x) => x.id === params.id); if (!c) throw notFound(); return { name: c.name.en }; },
   head: ({ loaderData }) => ({ meta: [
-    { title: `${loaderData?.name ?? "Circle"} — billmate` },
+    { title: `${loaderData?.name ?? "Circle"} — chuaykan` },
     { name: "description", content: "Circle details and member bills (demo)." },
-    { property: "og:title", content: `${loaderData?.name ?? "Circle"} — billmate` },
+    { property: "og:title", content: `${loaderData?.name ?? "Circle"} — chuaykan` },
     { property: "og:description", content: "A fictional mutual aid circle." },
   ] }),
   notFoundComponent: () => <div className="card p-8 text-center">Circle not found. <Link to="/circles" className="font-semibold text-primary">Back</Link></div>,

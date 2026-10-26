@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!s.onboarded && loc.pathname !== "/onboarding") {
-      const raw = typeof window !== "undefined" ? localStorage.getItem("billmate-demo-v1") : null;
+      const raw = typeof window !== "undefined" ? localStorage.getItem("chuaykan-demo-v1") : null;
       if (!raw || !JSON.parse(raw).onboarded) nav({ to: "/onboarding" });
     }
   }, [s.onboarded, loc.pathname, nav]);

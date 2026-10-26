@@ -7,9 +7,9 @@ import { Btn, PageHeader, Progress } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/corporate")({
   head: () => ({ meta: [
-    { title: "Corporate matching — billmate" },
-    { name: "description", content: "How companies could match employee giving on billmate (demo)." },
-    { property: "og:title", content: "Corporate matching — billmate" },
+    { title: "Corporate matching — chuaykan" },
+    { name: "description", content: "How companies could match employee giving on chuaykan (demo)." },
+    { property: "og:title", content: "Corporate matching — chuaykan" },
     { property: "og:description", content: "Fictional corporate matching partners, demo only." },
   ] }),
   component: Corporate,

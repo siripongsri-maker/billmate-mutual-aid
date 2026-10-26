@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/how-it-works")({
   head: () => ({ meta: [
-    { title: "Trust & how it works — billmate" },
-    { name: "description", content: "How billmate's demo review, privacy and safety work." },
-    { property: "og:title", content: "Trust & how it works — billmate" },
+    { title: "Trust & how it works — chuaykan" },
+    { name: "description", content: "How chuaykan's demo review, privacy and safety work." },
+    { property: "og:title", content: "Trust & how it works — chuaykan" },
     { property: "og:description", content: "Privacy-first mutual aid, explained." },
   ] }),
   component: How,

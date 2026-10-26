@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({ meta: [
-    { title: "Notifications — billmate" },
-    { name: "description", content: "Your billmate demo notifications." },
-    { property: "og:title", content: "Notifications — billmate" },
+    { title: "Notifications — chuaykan" },
+    { name: "description", content: "Your chuaykan demo notifications." },
+    { property: "og:title", content: "Notifications — chuaykan" },
     { property: "og:description", content: "Updates on bills, circles and requests (demo)." },
   ] }),
   component: Notifications,

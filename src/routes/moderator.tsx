@@ -7,10 +7,10 @@ import { Btn, Empty, getBill, PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/moderator")({
   head: () => ({ meta: [
-    { title: "Moderator dashboard — billmate" },
+    { title: "Moderator dashboard — chuaykan" },
     { name: "description", content: "Demo verification queue, dispute flags and metrics." },
-    { property: "og:title", content: "Moderator dashboard — billmate" },
-    { property: "og:description", content: "Review pending requests in the billmate demo." },
+    { property: "og:title", content: "Moderator dashboard — chuaykan" },
+    { property: "og:description", content: "Review pending requests in the chuaykan demo." },
   ] }),
   component: Moderator,
 });
