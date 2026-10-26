@@ -4,13 +4,15 @@ Build BILLMATE, a beautiful mobile-first Thai/English interactive mutual aid bil
 
 This project was built with [Lovable](https://lovable.dev).
 
-## คนละนิด — interactive visual concept
+## คนละนิด — ช่วยกันจ่ายบิลจริง
 
-The standalone Thai **Konlanid (คนละนิด)** concept is in [`public/konlanid/`](public/konlanid/). It includes the warm illustrated interface, bill discovery and detail screens, amount selection and review, contribution tracking, a sample request flow, and reporting/pause states.
+The live Thai **Konlanid (คนละนิด)** site is in [`public/konlanid/`](public/konlanid/), and the site home page (`/`) redirects there. Helpers pay the bill's provider directly from their bank app (the money never passes through the requester or the team), then send their slip to the team.
 
-The site home page (`/`) now redirects here. With the development server running, open **`/`** or **`/konlanid/index.html`**. You can also open `public/konlanid/index.html` directly in a browser. Keep `style.css`, `app.js`, and the `assets/` folder alongside it.
+**Adding or updating a bill:** edit [`public/konlanid/data.js`](public/konlanid/data.js) — copy the commented template, fill in the real bill, commit and push. After checking slips, update `raised` and `helpers`; set `status: 'paid'` once the bill is fully paid. Set `contact.url` to the team's LINE OA or Messenger link so helpers can send slips.
 
-All people, bills, verification, contributions, and payment confirmations are fictional demo data. There are no real payments, identity checks, document uploads, or biller integrations. Demo changes live in memory and reset when the page reloads. The transparent illustrations were generated with GPT and are included as optimized WebP files.
+Before opening a bill: get the requester's consent for what is shown, never publish real names or addresses, and confirm with the provider that the bill accepts partial payments through the channel you list.
+
+A helper's own contributions and saved bills are kept only in their browser (`localStorage`). The illustrations were generated with GPT and are included as optimized WebP files.
 
 ## Build with Lovable
 
