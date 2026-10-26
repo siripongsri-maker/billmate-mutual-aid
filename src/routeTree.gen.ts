@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as CorporateRouteImport } from './routes/corporate'
+import { Route as DraftStoryRouteImport } from './routes/draft-story'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ImpactRouteImport } from './routes/impact'
 import { Route as LoginRouteImport } from './routes/login'
@@ -50,6 +51,11 @@ const BrowseRoute = BrowseRouteImport.update({
 const CorporateRoute = CorporateRouteImport.update({
   id: '/corporate',
   path: '/corporate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DraftStoryRoute = DraftStoryRouteImport.update({
+  id: '/draft-story',
+  path: '/draft-story',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
+  '/draft-story': typeof DraftStoryRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
   '/login': typeof LoginRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
+  '/draft-story': typeof DraftStoryRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
   '/login': typeof LoginRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
+  '/draft-story': typeof DraftStoryRoute
   '/how-it-works': typeof HowItWorksRoute
   '/impact': typeof ImpactRoute
   '/login': typeof LoginRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/browse'
     | '/corporate'
+    | '/draft-story'
     | '/how-it-works'
     | '/impact'
     | '/login'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/corporate'
+    | '/draft-story'
     | '/how-it-works'
     | '/impact'
     | '/login'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/browse'
     | '/corporate'
+    | '/draft-story'
     | '/how-it-works'
     | '/impact'
     | '/login'
@@ -294,6 +306,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   BrowseRoute: typeof BrowseRoute
   CorporateRoute: typeof CorporateRoute
+  DraftStoryRoute: typeof DraftStoryRoute
   HowItWorksRoute: typeof HowItWorksRoute
   ImpactRoute: typeof ImpactRoute
   LoginRoute: typeof LoginRoute
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/corporate'
       fullPath: '/corporate'
       preLoaderRoute: typeof CorporateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/draft-story': {
+      id: '/draft-story'
+      path: '/draft-story'
+      fullPath: '/draft-story'
+      preLoaderRoute: typeof DraftStoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how-it-works': {
@@ -490,6 +510,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   BrowseRoute: BrowseRoute,
   CorporateRoute: CorporateRoute,
+  DraftStoryRoute: DraftStoryRoute,
   HowItWorksRoute: HowItWorksRoute,
   ImpactRoute: ImpactRoute,
   LoginRoute: LoginRoute,
