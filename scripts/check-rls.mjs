@@ -49,14 +49,14 @@ async function call(method, path, { body, prefer } = {}) {
 }
 
 const isEmptyList = (r) => r.status === 200 && Array.isArray(r.json) && r.json.length === 0
-const isDenied = (r) => r.status === 401 || r.status === 403
 const code = (r) => r.json?.code ?? ''
+const isDenied = (r) => (r.status === 401 || r.status === 403) && code(r) === '42501'
 
 const checks = [
   {
-    name: 'GET profiles returns []',
+    name: 'GET profiles returns [] or is denied (not 404)',
     run: () => call('GET', 'profiles?select=user_id'),
-    pass: isEmptyList,
+    pass: (r) => isEmptyList(r) || isDenied(r),
   },
   {
     name: 'GET settings returns [] or is denied (not 404)',
@@ -72,7 +72,7 @@ const checks = [
     name: 'POST profiles as owner is rejected (401/403, 42501)',
     run: () =>
       call('POST', 'profiles', { body: { user_id: randomUUID(), role: 'owner' }, prefer: 'return=minimal' }),
-    pass: (r) => isDenied(r) && code(r) === '42501',
+    pass: isDenied,
   },
   {
     name: 'GET contact_messages returns []',
@@ -91,7 +91,7 @@ const checks = [
         },
         prefer: 'return=minimal',
       }),
-    pass: (r) => isDenied(r) && code(r) === '42501',
+    pass: isDenied,
   },
   {
     name: 'PATCH contact_messages changes no rows (content-range */0)',

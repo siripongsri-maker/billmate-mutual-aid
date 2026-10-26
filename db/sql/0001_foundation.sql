@@ -44,6 +44,11 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Backfill: people who signed up before this migration get a profile row too.
+insert into public.profiles (user_id)
+select id from auth.users
+on conflict (user_id) do nothing;
+
 -- True when the signed-in user is an admin or owner and is not suspended.
 create or replace function public.is_admin()
 returns boolean
