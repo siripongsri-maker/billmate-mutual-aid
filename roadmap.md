@@ -1,0 +1,3 @@
+- [ ] Add authenticated AI story drafting with privacy review and editable output.
+- [ ] Link drafting from the existing request page.
+- [ ] Verify privacy rules, authenticated generation, and page behavior.
