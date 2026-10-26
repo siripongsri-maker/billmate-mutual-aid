@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const main = [
     { to: "/", icon: Home, label: t("หน้าแรก", "Home") },
     { to: "/browse", icon: Search, label: t("ค้นหาบิล", "Browse") },
-    { to: "/requests/new", icon: PlusCircle, label: t("ขอความช่วยเหลือ", "Ask help") },
+    { to: "/requests/new", icon: PlusCircle, label: t("ขอช่วย", "Ask help") },
     { to: "/circles", icon: Users, label: t("วงช่วยเหลือ", "Circles") },
     { to: "/profile", icon: User, label: t("โปรไฟล์", "Profile") },
   ] as const;
