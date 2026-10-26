@@ -7,6 +7,7 @@ import { Btn, getBill, PageHeader, useRaised } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/bills/$id_/contribute")({
+  staticData: { sitemap: false },
   loader: ({ params }) => { if (!getBill(params.id)) throw notFound(); return null; },
   head: () => ({ meta: [
     { title: "Chip in (simulated) — chuaykan" },

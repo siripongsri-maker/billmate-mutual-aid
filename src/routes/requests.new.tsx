@@ -7,6 +7,7 @@ import { Btn, PageHeader } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/requests/new")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "Request help — chuaykan" },
     { name: "description", content: "Multi-step demo form to request help with a bill." },

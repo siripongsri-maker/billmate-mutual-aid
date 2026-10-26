@@ -6,6 +6,7 @@ import { fmt } from "@/lib/data";
 import { Btn, PageHeader, Progress } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/corporate")({
+  staticData: { sitemap: true },
   head: () => ({ meta: [
     { title: "Corporate matching — chuaykan" },
     { name: "description", content: "How companies could match employee giving on chuaykan (demo)." },

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/how-it-works")({
+  staticData: { sitemap: true },
   head: () => ({ meta: [
     { title: "Trust & how it works — chuaykan" },
     { name: "description", content: "How chuaykan's demo review, privacy and safety work." },

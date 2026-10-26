@@ -6,6 +6,7 @@ import { Logo } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "Welcome — chuaykan" },
     { name: "description", content: "Get started with chuaykan, a mutual aid bill-sharing demo." },

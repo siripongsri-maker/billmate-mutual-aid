@@ -6,6 +6,7 @@ import { Btn, PageHeader } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "Profile & privacy — chuaykan" },
     { name: "description", content: "Profile, settings and privacy controls (demo)." },

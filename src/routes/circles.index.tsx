@@ -4,6 +4,7 @@ import { circles, fmt } from "@/lib/data";
 import { PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/circles/")({
+  staticData: { sitemap: true },
   head: () => ({ meta: [
     { title: "Circles — chuaykan" },
     { name: "description", content: "Discover mutual aid circles on chuaykan (demo)." },
