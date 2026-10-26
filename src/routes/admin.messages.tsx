@@ -13,6 +13,7 @@ import {
 import { listMessages, updateMessage } from "@/lib/admin-messages.functions";
 
 export const Route = createFileRoute("/admin/messages")({
+  staticData: { sitemap: false },
   validateSearch: (search: Record<string, unknown>): { status?: MessageStatus | undefined } => {
     const parsed = messageStatusSchema.safeParse(search["status"]);
     return parsed.success ? { status: parsed.data } : {};

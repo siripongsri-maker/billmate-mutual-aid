@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth";
 import { getAdminMe } from "@/lib/admin-me.functions";
 
 export const Route = createFileRoute("/admin")({
+  staticData: { sitemap: "exclude-subtree" },
   head: () => ({ meta: [{ title: "ทีมงาน — คนละนิด" }, { name: "robots", content: "noindex" }] }),
   component: AdminRoute,
 });

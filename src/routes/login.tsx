@@ -4,6 +4,7 @@ import { KlShell } from "@/components/kl/KlShell";
 import { safeNext, sendEmailCode, signInWithGoogle, useSession, verifyEmailCode } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
+  staticData: { sitemap: false },
   validateSearch: (search: Record<string, unknown>): { next?: string } =>
     typeof search["next"] === "string" ? { next: search["next"] } : {},
   head: () => ({ meta: [{ title: "เข้าสู่ระบบ — คนละนิด" }] }),

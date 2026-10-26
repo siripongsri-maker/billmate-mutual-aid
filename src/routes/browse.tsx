@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 type Search = { cat?: Category | undefined };
 export const Route = createFileRoute("/browse")({
+  staticData: { sitemap: true },
   validateSearch: (s: Record<string, unknown>): Search => ({ cat: categories.some((c) => c.id === s["cat"]) ? (s["cat"] as Category) : undefined }),
   head: () => ({ meta: [
     { title: "Browse bills — chuaykan" },

@@ -7,6 +7,7 @@ import { ROLE_LABELS, type TeamMember } from "@/lib/admin-team";
 import { listTeam, setRole } from "@/lib/admin-team.functions";
 
 export const Route = createFileRoute("/admin/team")({
+  staticData: { sitemap: false },
   component: TeamPage,
 });
 
