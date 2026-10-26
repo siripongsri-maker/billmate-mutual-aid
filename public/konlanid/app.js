@@ -81,6 +81,36 @@
     return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'numeric'});
   };
 
+  // Thai QR Payment, bill payment (EMVCo tag 30): any Thai bank app fills in biller, reference and amount.
+  const tlv = (id, value) => `${id}${String(value.length).padStart(2, '0')}${value}`;
+  function crc16(text) {
+    let crc = 0xFFFF;
+    for (const byte of new TextEncoder().encode(text)) {
+      crc ^= byte << 8;
+      for (let i = 0; i < 8; i++) crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+  const qrRef = v => String(v || '').replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+  function billQrPayload(p, amount) {
+    const ref1 = qrRef(p.ref1 || p.ref), ref2 = qrRef(p.ref2);
+    const merchant = tlv('00', 'A000000677010112') + tlv('01', p.billerId) + tlv('02', ref1) + (ref2 ? tlv('03', ref2) : '');
+    const body = tlv('00', '01') + tlv('01', '12') + tlv('30', merchant) + tlv('53', '764') + tlv('54', Number(amount).toFixed(2)) + tlv('58', 'TH') + '6304';
+    return body + crc16(body);
+  }
+  const hasBillQr = p => /^\d{15}$/.test(String(p.billerId || '')) && qrRef(p.ref1 || p.ref).length > 0 && typeof window.qrcode === 'function';
+  function billQrImage(b, amount) {
+    const qr = window.qrcode(0, 'M'); qr.addData(billQrPayload(b.pay, amount)); qr.make();
+    const cells = qr.getModuleCount(), cell = 8, quiet = 4 * cell, size = cells * cell + quiet * 2;
+    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size + 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#1d3b2c';
+    for (let r = 0; r < cells; r++) for (let c = 0; c < cells; c++) if (qr.isDark(r, c)) ctx.fillRect(quiet + c * cell, quiet + r * cell, cell, cell);
+    ctx.textAlign = 'center'; ctx.font = '600 22px "Noto Sans Thai", sans-serif';
+    ctx.fillText(`คนละนิด · ${b.pay.provider || ''} · ${money(amount)}`, size / 2, size + 30);
+    return canvas.toDataURL('image/png');
+  }
+
   function hydrateIcons(root = document) {
     root.querySelectorAll('[data-icon]').forEach(el => {el.innerHTML = icon(el.dataset.icon);});
   }
@@ -198,6 +228,7 @@
     const amount = state.amounts[b.id];
     if (!amount || amountError(b, amount)) return help(b, amount ? amountError(b, amount) : '');
     const p = b.pay;
+    if (!p.private && hasBillQr(p)) return payByQr(b, amount);
     return `<section class="view review-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-summary">${categoryIcon(b)}<h2>${safe(b.title)}</h2><p class="bill-meta">โดย ${safe(b.alias)}</p></div><div class="help-form form-card">
       <div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${p.private ? 'ขอจากทีมทางแชต' : safe(p.ref || '-')}${p.ref && !p.private ? ` <button class="icon-button small-icon" data-copy="${safe(String(p.ref).replace(/[^0-9A-Za-z]/g, ''))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button>` : ''}</b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>
       ${p.private ? `<div class="support-note">${icon('lock')}<p>เพื่อความเป็นส่วนตัวของผู้ขอ ทีมจะส่ง${safe(p.refLabel || 'เลขสำหรับจ่าย')}ให้ทางแชต</p></div>${contactButton(`ขอ${safe(p.refLabel || 'เลขสำหรับจ่าย')}ทาง ${safe(contact?.label)}`, 'outline')}` : ''}
@@ -205,6 +236,18 @@
       ${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}
       <div class="support-note warm">${icon('info')}<p>ตรวจชื่อผู้รับเงินในแอปให้เป็น <b>${safe(p.provider || 'ผู้ให้บริการ')}</b> ก่อนกดยืนยัน และเก็บสลิปไว้${contact ? 'ส่งให้ทีม' : 'เป็นหลักฐาน'}</p></div>
       <button class="button coral full" data-paid="${b.id}">${contact ? `จ่ายแล้ว ส่งสลิปให้ทีม` : 'จ่ายแล้ว'} ${icon('check')}</button>
+      <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p></div></div></section>`;
+  }
+  function payByQr(b, amount) {
+    const p = b.pay, image = billQrImage(b, amount);
+    const manual = `<div class="summary-box"><div class="summary-row"><span>จ่ายให้</span><b>${safe(p.provider || '-')}</b></div><div class="summary-row pay-ref"><span>${safe(p.refLabel || 'เลขอ้างอิง')}</span><b>${safe(p.ref || '-')} <button class="icon-button small-icon" data-copy="${safe(qrRef(p.ref))}" aria-label="คัดลอกเลขอ้างอิง">${icon('copy')}</button></b></div><div class="summary-row total"><span>ยอดที่คุณช่วย</span><b>${money(amount)}</b></div></div>${Array.isArray(p.how) && p.how.length ? `<ol class="pay-how">${p.how.map(step => `<li>${safe(step)}</li>`).join('')}</ol>` : ''}`;
+    return `<section class="view review-view pay-qr-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-form form-card">
+      <figure class="pay-qr-card"><img class="pay-qr" src="${image}" alt="QR จ่ายบิล ${safe(p.provider)} ยอด ${money(amount)}" width="300" height="340"><figcaption>${safe(b.title)}</figcaption></figure>
+      <a class="button primary full" href="${image}" download="konlanid-${safe(b.id)}-${Number(amount).toFixed(2)}.png">บันทึก QR ${icon('arrow')}</a>
+      <ol class="pay-steps qr-steps"><li><b>บันทึก QR ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูป QR จากอัลบั้ม แอปจะกรอกเบอร์และยอดให้เอง</span></li><li><b>ตรวจว่าผู้รับเงินเป็น ${safe(p.provider)} ยอด ${money(amount)}</b><span>แล้วกดยืนยัน เก็บสลิปไว้${contact ? 'ส่งให้ทีม' : ''}</span></li></ol>
+      <p class="small-text">อยู่บนคอมพิวเตอร์? สแกน QR นี้ด้วยแอปธนาคารในมือถือได้เลย</p>
+      <details class="faq"><summary>ไม่สะดวกสแกน? กรอกเลขเอง ${icon('chevron')}</summary>${manual}</details>
+      <button class="button coral full" data-paid="${b.id}">${contact ? 'จ่ายแล้ว ส่งสลิปให้ทีม' : 'จ่ายแล้ว'} ${icon('check')}</button>
       <p class="small-text centered">ยอดบนหน้าเว็บจะอัปเดตเมื่อทีม${contact ? 'ตรวจสลิป' : 'เช็กยอดกับผู้ให้บริการ'}แล้ว</p></div></div></section>`;
   }
   function closedView(b) {

@@ -27,6 +27,8 @@
 .pay-steps{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:12px;counter-reset:step}.pay-steps li{counter-increment:step;display:grid;grid-template-columns:30px 1fr;column-gap:12px;font-size:14px;line-height:1.6}.pay-steps li:before{content:counter(step);grid-row:span 2;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--sage);color:var(--green);font:700 14px var(--number)}.pay-steps b{font-weight:600}.pay-steps span{color:var(--muted);font-size:13px}
 .pay-how{margin:16px 0;padding-left:22px;display:grid;gap:8px;font-size:14px;line-height:1.6}
 .pay-qr{display:block;width:220px;height:auto;max-width:100%;margin:18px auto;border-radius:16px;background:#fff;padding:10px;border:1px solid var(--border)}
+.pay-qr-card{margin:0 0 16px;text-align:center}.pay-qr-card .pay-qr{width:260px;margin:0 auto 10px;padding:6px}.pay-qr-card figcaption{font-size:14px;color:var(--muted);line-height:1.6}.pay-qr-card figcaption b{color:var(--ink);font-size:16px}
+.qr-steps{margin-top:20px}.pay-qr-view .faq{margin:8px 0 16px}
 .pay-ref{flex-wrap:wrap;row-gap:4px}.pay-ref b{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--number);font-size:18px;letter-spacing:.5px;white-space:nowrap}.small-icon{width:34px;height:34px;min-height:0}.small-icon svg{width:17px;height:17px}
 .inline-link{display:inline;padding:0;min-height:0;font-size:inherit}
 .detail-progress{display:none}
