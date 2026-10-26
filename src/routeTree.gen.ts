@@ -21,6 +21,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminLogRouteImport } from './routes/admin.log'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminTeamRouteImport } from './routes/admin.team'
 import { Route as BillsIdRouteImport } from './routes/bills.$id'
@@ -90,6 +91,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLogRoute = AdminLogRouteImport.update({
+  id: '/log',
+  path: '/log',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMessagesRoute = AdminMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/admin/log': typeof AdminLogRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/admin/log': typeof AdminLogRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/admin/log': typeof AdminLogRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/team': typeof AdminTeamRoute
   '/bills/$id': typeof BillsIdRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/admin/log'
     | '/admin/messages'
     | '/admin/team'
     | '/bills/$id'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/admin/log'
     | '/admin/messages'
     | '/admin/team'
     | '/bills/$id'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/profile'
+    | '/admin/log'
     | '/admin/messages'
     | '/admin/team'
     | '/bills/$id'
@@ -371,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/log': {
+      id: '/admin/log'
+      path: '/log'
+      fullPath: '/admin/log'
+      preLoaderRoute: typeof AdminLogRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/messages': {
       id: '/admin/messages'
       path: '/messages'
@@ -431,12 +450,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminLogRoute: typeof AdminLogRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminTeamRoute: typeof AdminTeamRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminLogRoute: AdminLogRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminTeamRoute: AdminTeamRoute,
   AdminIndexRoute: AdminIndexRoute,
