@@ -244,7 +244,7 @@
     return `<section class="view review-view pay-qr-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-form form-card">
       <figure class="pay-qr-card"><img class="pay-qr" src="${image}" alt="QR จ่ายบิล ${safe(p.provider)} ยอด ${money(amount)}" width="300" height="340"><figcaption>${safe(b.title)}</figcaption></figure>
       <a class="button primary full" href="${image}" download="konlanid-${safe(b.id)}-${Number(amount).toFixed(2)}.png">บันทึก QR ${icon('arrow')}</a>
-      <ol class="pay-steps qr-steps"><li><b>บันทึก QR ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูป QR จากอัลบั้ม แอปจะกรอกเบอร์และยอดให้เอง</span></li><li><b>ตรวจว่าผู้รับเงินเป็น ${safe(p.provider)} ยอด ${money(amount)}</b><span>แล้วกดยืนยัน เก็บสลิปไว้${contact ? 'ส่งให้ทีม' : ''}</span></li></ol>
+      <ol class="pay-steps qr-steps"><li><b>บันทึก QR ลงเครื่อง</b><span>บันทึกไม่ได้? กดค้างที่รูปแล้วเลือกบันทึกรูป</span></li><li><b>เปิดแอปธนาคาร แล้วกดสแกน</b><span>เลือกรูป QR จากอัลบั้ม แอปจะกรอกเบอร์และยอดให้เอง</span></li><li><b>ตรวจว่าผู้รับเงินเป็น ${safe(p.payee || p.provider)} ยอด ${money(amount)}</b><span>แล้วกดยืนยัน เก็บสลิปไว้${contact ? 'ส่งให้ทีม' : ''}</span></li></ol>
       <p class="small-text">อยู่บนคอมพิวเตอร์? สแกน QR นี้ด้วยแอปธนาคารในมือถือได้เลย</p>
       <details class="faq"><summary>ไม่สะดวกสแกน? กรอกเลขเอง ${icon('chevron')}</summary>${manual}</details>
       <button class="button coral full" data-paid="${b.id}">${contact ? 'จ่ายแล้ว ส่งสลิปให้ทีม' : 'จ่ายแล้ว'} ${icon('check')}</button>
