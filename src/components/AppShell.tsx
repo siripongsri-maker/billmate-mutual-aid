@@ -86,10 +86,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 export function Logo() {
+  const s = useStore();
+  const th = s.lang === "th";
   return (
     <span className="flex items-center gap-2">
-      <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-foreground font-display font-bold">b</span>
-      <span className="font-display text-xl font-semibold tracking-tight">bill<span className="text-coral">mate</span></span>
+      <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-foreground font-display font-bold">{th ? BRAND.markTh : BRAND.markEn}</span>
+      <span className="font-display text-xl font-semibold tracking-tight">{th ? <>{BRAND.splitTh[0]}<span className="text-coral">{BRAND.splitTh[1]}</span></> : <>{BRAND.splitEn[0]}<span className="text-coral">{BRAND.splitEn[1]}</span></>}</span>
     </span>
   );
 }
