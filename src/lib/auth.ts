@@ -52,11 +52,11 @@ export async function verifyEmailCode(email: string, code: string): Promise<Auth
 }
 
 export async function signInWithGoogle(next: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${window.location.origin}/login?next=${encodeURIComponent(next)}` },
+  const { lovable } = await import("@/integrations/lovable");
+  const result = await lovable.auth.signInWithOAuth("google", {
+    redirect_uri: `${window.location.origin}/login?next=${encodeURIComponent(next)}`,
   });
-  return toResult(error);
+  return toResult((result as { error?: AuthErrorLike | null })?.error ?? null);
 }
 
 export function useSession(): { session: Session | null; loading: boolean } {

@@ -16,6 +16,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("@/integrations/lovable", () => ({
+  lovable: { auth: { signInWithOAuth: (...a: unknown[]) => signInWithOAuth(...a) } },
+}));
+
 import {
   authErrorMessage,
   safeNext,
@@ -93,9 +97,8 @@ describe("signInWithGoogle", () => {
   it("redirects back to /login with the encoded next path", async () => {
     signInWithOAuth.mockResolvedValue({ error: null });
     const res = await signInWithGoogle("/admin/bills?x=1");
-    expect(signInWithOAuth).toHaveBeenCalledWith({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/login?next=${encodeURIComponent("/admin/bills?x=1")}` },
+    expect(signInWithOAuth).toHaveBeenCalledWith("google", {
+      redirect_uri: `${window.location.origin}/login?next=${encodeURIComponent("/admin/bills?x=1")}`,
     });
     expect(res).toEqual({ ok: true });
   });
