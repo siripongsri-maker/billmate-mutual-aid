@@ -73,6 +73,7 @@ export function MessagesInbox({
     const mine = ++generation.current;
     setPhase("loading");
     setMoreFailed(false);
+    setLoadingMore(false);
     listMessages({ data: status ? { status } : {} }).then(
       (res) => {
         if (generation.current !== mine) return;

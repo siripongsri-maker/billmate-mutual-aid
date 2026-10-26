@@ -39,6 +39,13 @@ describe("listMessagesSchema", () => {
     expect(listMessagesSchema.safeParse({ before: "2026-10-26T12:00:00.000Z" }).success).toBe(true);
   });
 
+  it("accepts a PostgREST timestamp with microseconds and a +00:00 offset, unchanged", () => {
+    const before = "2026-10-26T05:30:00.123456+00:00";
+    const parsed = listMessagesSchema.safeParse({ before });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.before).toBe(before);
+  });
+
   it("rejects an unknown status or a cursor that is not an ISO datetime", () => {
     expect(listMessagesSchema.safeParse({ status: "archived" }).success).toBe(false);
     expect(listMessagesSchema.safeParse({ before: "yesterday" }).success).toBe(false);

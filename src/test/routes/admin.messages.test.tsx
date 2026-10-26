@@ -134,7 +134,7 @@ describe("/admin/messages", () => {
 
   it("loads the next page with the last created_at as the cursor", async () => {
     const first = Array.from({ length: 30 }, (_, i) =>
-      msg({ id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, createdAt: `2026-10-26T05:${String(59 - i).padStart(2, "0")}:00.000Z` }),
+      msg({ id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, createdAt: `2026-10-26T05:${String(59 - i).padStart(2, "0")}:00.123456+00:00` }),
     );
     listMessages.mockResolvedValueOnce({ items: first, counts: COUNTS, hasMore: true });
     renderInbox();
@@ -152,6 +152,33 @@ describe("/admin/messages", () => {
     expect(await screen.findByText("ข้อความเก่า")).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(31);
     expect(screen.queryByRole("button", { name: "ดูเพิ่ม" })).toBeNull();
+  });
+
+  it("re-enables ดูเพิ่ม on the new list when the filter changes during a load-more", async () => {
+    const page = (prefix: string) =>
+      Array.from({ length: 30 }, (_, i) =>
+        msg({ id: `${prefix}000000-0000-4000-8000-${String(i).padStart(12, "0")}`, createdAt: `2026-10-26T05:${String(59 - i).padStart(2, "0")}:00.123456+00:00` }),
+      );
+    listMessages.mockResolvedValueOnce({ items: page("a"), counts: COUNTS, hasMore: true });
+    const view = render(<MessagesInbox onStatusChange={vi.fn()} />);
+    await screen.findAllByRole("article");
+
+    let resolveMore!: (v: unknown) => void;
+    listMessages.mockReturnValueOnce(new Promise((r) => (resolveMore = r)));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "ดูเพิ่ม" }));
+    });
+    expect(screen.getByRole("button", { name: "กำลังโหลด…" })).toBeDisabled();
+
+    listMessages.mockResolvedValueOnce({ items: page("b"), counts: COUNTS, hasMore: true });
+    await act(async () => {
+      view.rerender(<MessagesInbox status="new" onStatusChange={vi.fn()} />);
+    });
+    await act(async () => {
+      resolveMore({ items: page("c"), counts: COUNTS, hasMore: false });
+    });
+    expect(await screen.findByRole("button", { name: "ดูเพิ่ม" })).toBeEnabled();
+    expect(screen.getAllByRole("article")).toHaveLength(30);
   });
 
   it("shows an empty state, and a retryable error when loading fails", async () => {

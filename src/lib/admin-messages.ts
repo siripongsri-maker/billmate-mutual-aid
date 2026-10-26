@@ -48,8 +48,11 @@ export type UpdateMessageInput = z.infer<typeof updateMessageSchema>;
 
 export const listMessagesSchema = z.object({
   status: messageStatusSchema.optional(),
-  /** ISO created_at of the last message already shown; returns older ones. */
-  before: z.string().datetime().optional(),
+  /**
+   * created_at of the last message already shown, passed back exactly as PostgREST returned it
+   * (e.g. 2026-10-26T05:30:00.123456+00:00, with microseconds and an offset); returns older ones.
+   */
+  before: z.string().datetime({ offset: true }).optional(),
 });
 export type ListMessagesInput = z.infer<typeof listMessagesSchema>;
 
