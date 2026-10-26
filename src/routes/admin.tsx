@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { AdminOverviewContext } from "@/components/admin/AdminOverviewContext";
 import { KlShell } from "@/components/kl/KlShell";
 import { supabase } from "@/integrations/supabase/client";
 import { isForbidden, isUnauthorized } from "@/lib/admin-access";
 import { useSession } from "@/lib/auth";
-import { getAdminOverview, type AdminOverview } from "@/lib/admin-overview.functions";
+import { getAdminMe } from "@/lib/admin-me.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "ทีมงาน — คนละนิด" }, { name: "robots", content: "noindex" }] }),
@@ -36,7 +35,7 @@ type State =
   | { kind: "loading" }
   | { kind: "forbidden" }
   | { kind: "error" }
-  | { kind: "ready"; data: AdminOverview };
+  | { kind: "ready" };
 
 function isActive(pathname: string, href: string): boolean {
   return href === "/admin" ? pathname === "/admin" || pathname === "/admin/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -62,9 +61,9 @@ export function AdminLayout({ pathname = "/admin", children }: { pathname?: stri
     }
     let active = true;
     setState({ kind: "loading" });
-    getAdminOverview().then(
-      (data) => {
-        if (active) setState({ kind: "ready", data });
+    getAdminMe().then(
+      () => {
+        if (active) setState({ kind: "ready" });
       },
       async (err: unknown) => {
         if (!active) return;
@@ -147,7 +146,7 @@ export function AdminLayout({ pathname = "/admin", children }: { pathname?: stri
           );
         })}
       </nav>
-      <AdminOverviewContext.Provider value={state.data}>{children}</AdminOverviewContext.Provider>
+      {children}
     </KlShell>
   );
 }

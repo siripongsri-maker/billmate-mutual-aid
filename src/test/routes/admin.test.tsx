@@ -16,6 +16,9 @@ vi.mock("@/lib/auth", async (importOriginal) => ({
   useSession: () => useSession(),
 }));
 
+const getAdminMe = vi.fn();
+vi.mock("@/lib/admin-me.functions", () => ({ getAdminMe: (...a: unknown[]) => getAdminMe(...a) }));
+
 const getAdminOverview = vi.fn();
 vi.mock("@/lib/admin-overview.functions", () => ({ getAdminOverview: (...a: unknown[]) => getAdminOverview(...a) }));
 
@@ -35,6 +38,8 @@ const forbidden = () => Object.assign(new Error("Forbidden: not staff"), { statu
 beforeEach(() => {
   useSession.mockReturnValue({ session: { user: { id: "u" } }, loading: false });
   signOut.mockResolvedValue({ error: null });
+  getAdminMe.mockResolvedValue({ userId: "u", role: "admin" });
+  getAdminOverview.mockResolvedValue({ newMessages: 0, inProgressMessages: 0, teamCount: 1 });
 });
 afterEach(() => {
   cleanup();
@@ -43,7 +48,7 @@ afterEach(() => {
 
 describe("/admin", () => {
   it("shows only the refusal, a way home and no numbers when the server says 403", async () => {
-    getAdminOverview.mockRejectedValue(forbidden());
+    getAdminMe.mockRejectedValue(forbidden());
     renderAdmin();
     expect(await screen.findByText("หน้านี้สำหรับทีมคนละนิด")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /กลับหน้าแรก/ })).toHaveAttribute("href", "/");
@@ -51,10 +56,11 @@ describe("/admin", () => {
     expect(screen.queryByText("ข้อความใหม่")).toBeNull();
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(navigate).not.toHaveBeenCalled();
+    expect(getAdminOverview).not.toHaveBeenCalled();
   });
 
   it("also treats a serialized Forbidden message (no statusCode) as a refusal", async () => {
-    getAdminOverview.mockRejectedValue(new Error("Forbidden: not staff"));
+    getAdminMe.mockRejectedValue(new Error("Forbidden: not staff"));
     renderAdmin();
     expect(await screen.findByText("หน้านี้สำหรับทีมคนละนิด")).toBeInTheDocument();
   });
@@ -65,6 +71,7 @@ describe("/admin", () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith({ to: "/login", search: { next: "/admin" }, replace: true }),
     );
+    expect(getAdminMe).not.toHaveBeenCalled();
     expect(getAdminOverview).not.toHaveBeenCalled();
   });
 
@@ -72,11 +79,11 @@ describe("/admin", () => {
     useSession.mockReturnValue({ session: null, loading: true });
     renderAdmin();
     expect(navigate).not.toHaveBeenCalled();
-    expect(getAdminOverview).not.toHaveBeenCalled();
+    expect(getAdminMe).not.toHaveBeenCalled();
   });
 
   it("signs out and goes to login when the server answers Unauthorized", async () => {
-    getAdminOverview.mockRejectedValue(new Error("Unauthorized: Invalid token"));
+    getAdminMe.mockRejectedValue(new Error("Unauthorized: Invalid token"));
     renderAdmin();
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith({ to: "/login", search: { next: "/admin" }, replace: true }),
@@ -84,8 +91,8 @@ describe("/admin", () => {
     expect(signOut).toHaveBeenCalled();
   });
 
-  it("shows a retryable message for other failures", async () => {
-    getAdminOverview.mockRejectedValueOnce(new Error("boom"));
+  it("shows a retryable message when the access check fails for other reasons", async () => {
+    getAdminMe.mockRejectedValueOnce(new Error("boom"));
     renderAdmin();
     expect(await screen.findByRole("alert")).toHaveTextContent("โหลดข้อมูลไม่สำเร็จ");
     getAdminOverview.mockResolvedValue({ newMessages: 1, inProgressMessages: 0, teamCount: 1 });
@@ -93,6 +100,19 @@ describe("/admin", () => {
       screen.getByRole("button", { name: "ลองอีกครั้ง" }).click();
     });
     expect(await screen.findByText("ข้อความใหม่")).toBeInTheDocument();
+  });
+
+  it("keeps the menu and offers a retry when only the overview numbers fail", async () => {
+    getAdminOverview.mockRejectedValueOnce(new Error("boom"));
+    renderAdmin();
+    expect(await screen.findByRole("alert")).toHaveTextContent("โหลดข้อมูลไม่สำเร็จ");
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
+    getAdminOverview.mockResolvedValue({ newMessages: 2, inProgressMessages: 0, teamCount: 1 });
+    await act(async () => {
+      screen.getByRole("button", { name: "ลองอีกครั้ง" }).click();
+    });
+    expect(await screen.findByText("ข้อความใหม่")).toBeInTheDocument();
+    expect(getAdminMe).toHaveBeenCalledTimes(1);
   });
 
   it("shows labelled, clickable counts and the menu for staff", async () => {
