@@ -38,7 +38,7 @@
 - **หลังบ้าน:** Lovable Cloud (Supabase) — Postgres + Auth + Storage
   - งานที่ต้องใช้สิทธิ์สูง (อนุมัติ, เปลี่ยนสถานะ, สร้างลิงก์ดูเอกสาร) ทำใน **server function** ของ TanStack Start ด้วย service role ที่ฝั่ง server เท่านั้น
   - งานของผู้ใช้ทั่วไปใช้ client ที่มี RLS
-- **การเปลี่ยนฐานข้อมูล:** เขียนเป็นไฟล์ใน `supabase/migrations/` แล้วให้ Lovable รันและยืนยันผล (เหมือน `contact_messages`) — ทุกไฟล์ต้องรันซ้ำได้
+- **การเปลี่ยนฐานข้อมูล:** Lovable เก็บ migration ไว้ที่ `drizzle/migrations/` (มี journal และ snapshot) — เขียน SQL ให้รันซ้ำได้ แล้วให้ Lovable เป็นคนสร้าง migration ในระบบของมันและยืนยันผลด้วยคำสั่งตรวจ (แบบเดียวกับ `contact_messages`); ไม่เพิ่มไฟล์ใน `supabase/migrations/` อีก
 
 ### หน้าเว็บ (route)
 
