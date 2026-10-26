@@ -273,7 +273,8 @@
     if (method === 'qr') panel = scan('qr') + fallback('สแกนไม่ได้? กรอกเลขเอง', manual);
     else if (method === 'barcode') panel = scan('barcode') + fallback('สแกนไม่ได้? กรอกเลขเอง', manual);
     else if (method === 'manual') panel = `<p class="muted">แอปนี้ยังสแกนจ่ายบิลนี้ไม่ได้ กรอกเลขเองตามนี้</p>${manual}`;
-    else if (method === 'try') panel = (hasBillBarcode(p) ? scan('barcode') : '') + (hasBillQr(p) ? fallback('สแกนบาร์โค้ดไม่ได้? ลอง QR', scan('qr')) : '') + fallback('สแกนไม่ได้ทั้งคู่? กรอกเลขเอง', manual);
+    // Untested banks: manual entry is the one route AIS lists for every bank, so lead with it.
+    else if (method === 'try') panel = manual + (hasBillQr(p) ? fallback('ลองสแกน QR แทน', scan('qr')) : '') + (hasBillBarcode(p) ? fallback('ลองสแกนบาร์โค้ดแทน', scan('barcode')) : '');
     const chips = `<div class="filters bank-picker" role="group" aria-label="ธนาคารที่คุณใช้">${BANKS.map(([id, name]) => `<button class="filter${bank === id ? ' active' : ''}" data-bank="${id}" aria-pressed="${bank === id}">${name}</button>`).join('')}</div>`;
     return `<section class="view review-view pay-qr-view">${topbar(`จ่าย ${money(amount)} ตรงเข้าบิล`, {back:`#/help/${b.id}`})}<div class="help-layout"><div class="help-form form-card">
       <h2>ใช้แอปธนาคารไหน</h2>${chips}
