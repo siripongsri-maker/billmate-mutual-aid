@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#fffaf0">
+<meta name="description" content="คนละนิด ช่วยให้ชีวิตไปต่อ — แอปต้นแบบชุมชนช่วยจ่ายบิล เริ่มที่ 20 บาท พร้อมดูข้อมูลบิลและติดตามผลการช่วย ข้อมูลสมมติ ไม่มีการรับเงินจริง">
+<title>คนละนิด — ช่วยให้ชีวิตไปต่อ</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Nunito+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<a class="skip-link" href="#app">ข้ามไปเนื้อหาหลัก</a>
+<div class="demo-banner"><span class="demo-dot"></span> ต้นแบบทดลอง <span class="demo-separator">·</span> ข้อมูลสมมติ ไม่มีการจ่ายเงินจริง</div>
+<header class="site-header"><a class="wordmark" href="#/" aria-label="คนละนิด หน้าหลัก"><span class="logo-tile">นิด<span>·</span></span><span class="wordmark-copy"><b>คนละนิด</b><small>ช่วยให้ชีวิตไปต่อ</small></span></a><p class="header-tagline">A little from each of us.<br><b>A lot for someone.</b></p><button class="header-trust" data-notifications aria-label="การแจ้งเตือน"><span data-icon="bell"></span><span>การแจ้งเตือน</span></button></header>
+<div class="workspace"><aside class="sidebar" aria-label="เมนูแอป"><nav id="desktop-nav" aria-label="เมนูหลัก"><a href="#/" data-nav="home"><span data-icon="home"></span><span>หน้าหลัก</span></a><a href="#/bills" data-nav="browse"><span data-icon="bills"></span><span>บิลที่รอเรา</span></a><a href="#/activity" data-nav="activity"><span data-icon="heart"></span><span>รอยต่อการช่วย</span></a><a href="#/me" data-nav="profile"><span data-icon="user"></span><span>ของฉัน</span></a></nav><div class="sidebar-note"><div class="note-heart" aria-hidden="true"><span data-icon="heart"></span></div><p>“คนละนิด<br>ไม่ใช่จำนวนเงิน<br>แต่คือสิ่งที่เรา<br>ทำให้กันได้”</p><span class="note-stroke" aria-hidden="true"></span></div><div class="sidebar-foot"><span class="tiny-leaf" data-icon="leaf"></span><p>ให้เท่าที่ไหว<br>รับความช่วยเหลือได้เมื่อจำเป็น</p></div></aside><main id="app" tabindex="-1"><div class="initial-state"><span class="logo-tile">นิด<span>·</span></span><p>กำลังเปิดพื้นที่เล็ก ๆ ของเรา…</p></div></main></div>
+<nav id="bottom-nav" class="bottom-nav" aria-label="เมนูหลักบนมือถือ"><a href="#/" data-nav="home"><span data-icon="home"></span><span>หน้าหลัก</span></a><a href="#/bills" data-nav="browse"><span data-icon="bills"></span><span>บิลที่รอเรา</span></a><a href="#/activity" data-nav="activity"><span data-icon="heart"></span><span>รอยต่อการช่วย</span></a><a href="#/me" data-nav="profile"><span data-icon="user"></span><span>ของฉัน</span></a></nav>
+<dialog id="support-dialog" aria-label="ข้อมูลและการดูแลของคนละนิด"><div class="dialog-top"><span>คนละนิด ดูแลกัน</span><button class="icon-button" data-close aria-label="ปิดหน้าต่าง"><span data-icon="close"></span></button></div><div id="support-content"></div></dialog><div id="toast" role="status" aria-live="polite" aria-atomic="true"></div><noscript><p class="noscript">กรุณาเปิด JavaScript เพื่อทดลองใช้งานต้นแบบคนละนิด ไม่มีการรับหรือชำระเงินจริง</p></noscript><script src="app.js"></script>
+</body></html>
