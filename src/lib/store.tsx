@@ -36,7 +36,7 @@ const initial: State = {
   notifs: [
     { id: "n1", read: false, at: now - 3600000, text: { th: "บิลค่าไฟของครอบครัวสมใจใกล้ครบเป้าแล้ว 80%", en: "Somjai family's electricity bill is 80% funded" } },
     { id: "n2", read: false, at: now - 7200000, text: { th: "วงไรเดอร์ช่วยไรเดอร์มีบิลใหม่ 3 รายการ", en: "Riders for Riders has 3 new bills" } },
-    { id: "n3", read: true, at: now - 86400000, text: { th: "ยินดีต้อนรับสู่ billmate (เดโม)", en: "Welcome to billmate (demo)" } },
+    { id: "n3", read: true, at: now - 86400000, text: { th: "ยินดีต้อนรับสู่ ช่วยกน (เดโม)", en: "Welcome to chuaykan (demo)" } },
   ],
   disputes: [
     { id: "d1", billId: "b6", resolved: false, reason: { th: "ผู้ใช้รายงาน: ข้อมูลเรื่องราวไม่ตรงกับเอกสาร", en: "User report: story doesn't match document" } },
@@ -44,7 +44,7 @@ const initial: State = {
   ],
 };
 
-const KEY = "billmate-demo-v1";
+const KEY = "chuaykan-demo-v1";
 type Ctx = State & { set: (fn: (s: State) => State) => void; reset: () => void; t: (th: string, en: string) => string; l: (x: L) => string };
 const StoreCtx = createContext<Ctx | null>(null);
 

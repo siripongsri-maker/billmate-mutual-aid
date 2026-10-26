@@ -10,9 +10,9 @@ type Search = { cat?: Category | undefined };
 export const Route = createFileRoute("/browse")({
   validateSearch: (s: Record<string, unknown>): Search => ({ cat: categories.some((c) => c.id === s["cat"]) ? (s["cat"] as Category) : undefined }),
   head: () => ({ meta: [
-    { title: "Browse bills — billmate" },
-    { name: "description", content: "Search and filter community bills on billmate (demo)." },
-    { property: "og:title", content: "Browse bills — billmate" },
+    { title: "Browse bills — chuaykan" },
+    { name: "description", content: "Search and filter community bills on chuaykan (demo)." },
+    { property: "og:title", content: "Browse bills — chuaykan" },
     { property: "og:description", content: "Find a bill to help share. Demo data only." },
   ] }),
   component: Browse,

@@ -6,9 +6,9 @@ import { BillCard } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "billmate — Home" },
-    { name: "description", content: "Impact stats and featured reviewed bills on billmate (demo)." },
-    { property: "og:title", content: "billmate — Life happens. We help." },
+    { title: "chuaykan — Home" },
+    { name: "description", content: "Impact stats and featured reviewed bills on chuaykan (demo)." },
+    { property: "og:title", content: "chuaykan — Life happens. We help." },
     { property: "og:description", content: "Share essential bills with your community. Demo prototype." },
   ] }),
   component: Home,
@@ -76,7 +76,7 @@ function Home() {
 
       <Link to="/how-it-works" className="card lift flex items-center gap-4 p-5 bg-coral-soft">
         <span className="text-3xl">🛡️</span>
-        <div className="flex-1"><p className="font-semibold">{s.t("billmate ทำงานอย่างไร", "How billmate works")}</p><p className="text-sm text-muted-foreground">{s.t("ความปลอดภัย ความเป็นส่วนตัว และการตรวจสอบ", "Safety, privacy & review")}</p></div>
+        <div className="flex-1"><p className="font-semibold">{s.t("chuaykan ทำงานอย่างไร", "How chuaykan works")}</p><p className="text-sm text-muted-foreground">{s.t("ความปลอดภัย ความเป็นส่วนตัว และการตรวจสอบ", "Safety, privacy & review")}</p></div>
         <ArrowRight className="h-5 w-5" />
       </Link>
     </div>

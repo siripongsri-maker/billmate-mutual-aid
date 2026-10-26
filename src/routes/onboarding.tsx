@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [
-    { title: "Welcome — billmate" },
-    { name: "description", content: "Get started with billmate, a mutual aid bill-sharing demo." },
-    { property: "og:title", content: "Welcome — billmate" },
+    { title: "Welcome — chuaykan" },
+    { name: "description", content: "Get started with chuaykan, a mutual aid bill-sharing demo." },
+    { property: "og:title", content: "Welcome — chuaykan" },
     { property: "og:description", content: "Life happens. We help. A demo onboarding." },
   ] }),
   component: Onboarding,
@@ -20,7 +20,7 @@ function Onboarding() {
   const nav = useNavigate();
   const [step, setStep] = useState(0);
   const steps = [
-    { icon: "🤝", th: "ชีวิตมีเรื่องไม่คาดฝัน", en: "Life happens", sub: { th: "billmate ช่วยให้เพื่อนร่วมชุมชนแบ่งเบาบิลจำเป็น เช่น ค่ายา ค่าไฟ ค่าเทอม ทีละเล็กละน้อย", en: "billmate lets neighbours share essential bills — medicine, power, tuition — a little at a time." } },
+    { icon: "🤝", th: "ชีวิตมีเรื่องไม่คาดฝัน", en: "Life happens", sub: { th: "ช่วยกน ช่วยให้เพื่อนร่วมชุมชนแบ่งเบาบิลจำเป็น เช่น ค่ายา ค่าไฟ ค่าเทอม ทีละเล็กละน้อย", en: "chuaykan lets neighbours share essential bills — medicine, power, tuition — a little at a time." } },
     { icon: "🛡️", th: "ความเป็นส่วนตัวมาก่อน", en: "Privacy first", sub: { th: "ใช้นามสมมติ ปิดบังข้อมูลส่วนตัวอัตโนมัติ ไม่เปิดเผยที่อยู่หรือเลขบัญชี", en: "Pseudonyms, auto‑redaction, never public addresses or account numbers." } },
     { icon: "🌱", th: "ทุกบาทมีความหมาย", en: "Every baht counts", sub: { th: "เริ่มต้นเพียง ฿20 ดูผลกระทบที่คุณสร้างได้ในรอยเท้าการให้", en: "Start from ฿20 and watch your impact grow in your footprint." } },
   ];

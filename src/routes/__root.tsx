@@ -56,9 +56,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "billmate — Life happens. We help." },
-      { name: "description", content: "billmate demo: a Thai mutual aid bill-sharing prototype. No real payments." },
-      { property: "og:title", content: "billmate — Life happens. We help." },
+      { title: "chuaykan — Life happens. We help." },
+      { name: "description", content: "chuaykan demo: a Thai mutual aid bill-sharing prototype. No real payments." },
+      { property: "og:title", content: "chuaykan — Life happens. We help." },
       { property: "og:description", content: "A Thai/English mutual aid bill-sharing prototype (demo only)." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

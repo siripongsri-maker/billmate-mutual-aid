@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [
-    { title: "Profile & privacy — billmate" },
+    { title: "Profile & privacy — chuaykan" },
     { name: "description", content: "Profile, settings and privacy controls (demo)." },
-    { property: "og:title", content: "Profile & privacy — billmate" },
-    { property: "og:description", content: "Manage demo settings and privacy on billmate." },
+    { property: "og:title", content: "Profile & privacy — chuaykan" },
+    { property: "og:description", content: "Manage demo settings and privacy on chuaykan." },
   ] }),
   component: Profile,
 });

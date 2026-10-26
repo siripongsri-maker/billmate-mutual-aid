@@ -8,9 +8,9 @@ import { DemoBadge, getBill, PageHeader, Progress, useRaised } from "@/component
 export const Route = createFileRoute("/bills/$id")({
   loader: ({ params }) => { const b = getBill(params.id); if (!b) throw notFound(); return { title: b.title.en }; },
   head: ({ loaderData }) => ({ meta: [
-    { title: `${loaderData?.title ?? "Bill"} — billmate` },
+    { title: `${loaderData?.title ?? "Bill"} — chuaykan` },
     { name: "description", content: "Bill details, progress and story (demo)." },
-    { property: "og:title", content: `${loaderData?.title ?? "Bill"} — billmate` },
+    { property: "og:title", content: `${loaderData?.title ?? "Bill"} — chuaykan` },
     { property: "og:description", content: "Help share this fictional demo bill." },
   ] }),
   notFoundComponent: () => <div className="card p-8 text-center">ไม่พบบิลนี้ · Bill not found. <Link to="/browse" className="text-primary font-semibold">Browse</Link></div>,

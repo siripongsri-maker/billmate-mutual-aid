@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/requests/new")({
   head: () => ({ meta: [
-    { title: "Request help — billmate" },
+    { title: "Request help — chuaykan" },
     { name: "description", content: "Multi-step demo form to request help with a bill." },
-    { property: "og:title", content: "Request help — billmate" },
+    { property: "og:title", content: "Request help — chuaykan" },
     { property: "og:description", content: "Ask your community to share a bill (demo)." },
   ] }),
   component: NewRequest,

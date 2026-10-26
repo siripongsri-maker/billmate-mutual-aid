@@ -5,9 +5,9 @@ import { Empty, getBill, PageHeader, Progress } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/impact")({
   head: () => ({ meta: [
-    { title: "My footprint — billmate" },
+    { title: "My footprint — chuaykan" },
     { name: "description", content: "Your simulated giving footprint and impact receipts." },
-    { property: "og:title", content: "My footprint — billmate" },
+    { property: "og:title", content: "My footprint — chuaykan" },
     { property: "og:description", content: "See the impact of your simulated contributions." },
   ] }),
   component: Impact,

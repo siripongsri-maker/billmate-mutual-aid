@@ -5,9 +5,9 @@ import { PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/circles/")({
   head: () => ({ meta: [
-    { title: "Circles — billmate" },
-    { name: "description", content: "Discover mutual aid circles on billmate (demo)." },
-    { property: "og:title", content: "Circles — billmate" },
+    { title: "Circles — chuaykan" },
+    { name: "description", content: "Discover mutual aid circles on chuaykan (demo)." },
+    { property: "og:title", content: "Circles — chuaykan" },
     { property: "og:description", content: "Join fictional mutual aid circles in the demo." },
   ] }),
   component: Circles,
