@@ -18,12 +18,9 @@ function LoginRoute() {
 const RESEND_SECONDS = 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const inputClass =
-  "block w-full min-h-11 rounded-lg border border-[var(--kl-muted)] bg-white px-3 py-2 text-base text-[var(--kl-ink)]";
-const primaryBtn =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--kl-green)] px-4 py-2 text-base font-semibold text-white disabled:opacity-60";
-const secondaryBtn =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--kl-green)] bg-white px-4 py-2 text-base font-semibold text-[var(--kl-deep)] disabled:cursor-not-allowed disabled:text-[var(--kl-muted)] disabled:border-[var(--kl-muted)]";
+const inputClass = "kl-field";
+const primaryBtn = "kl-button kl-button--primary";
+const secondaryBtn = "kl-button kl-button--secondary";
 const linkBtn =
   "inline-flex min-h-11 items-center px-1 text-base font-semibold text-[var(--kl-green)] underline underline-offset-4";
 const errorClass = "mt-2 text-base font-medium text-[var(--kl-coral-ink)]";
@@ -104,115 +101,120 @@ export function LoginPage({ next }: { next: string }) {
 
   return (
     <KlShell title="เข้าสู่ระบบ">
-      <div className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-5 sm:p-7">
-        {/* Always mounted so screen readers pick up changes. Announces once when the resend cooldown starts and once when it ends, not every second. */}
-        <p className="sr-only" aria-live="polite">
-          {announcement}
-        </p>
-        {step === "email" ? (
-          <form onSubmit={requestCode} noValidate className="space-y-4">
-            <p className="text-base">ใช้อีเมลของทีม เราจะส่งรหัส 6 หลักไปให้ ไม่ต้องจำรหัสผ่านนะ</p>
-            <div>
-              <label htmlFor="login-email" className="mb-1 block text-base font-semibold">
-                อีเมล
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-invalid={emailError ? true : undefined}
-                aria-describedby={emailError ? "login-email-error" : undefined}
-                className={inputClass}
-              />
-              {emailError ? (
-                <p id="login-email-error" role="alert" className={errorClass}>
-                  {emailError}
-                </p>
-              ) : null}
-            </div>
-            <button type="submit" disabled={busy} className={primaryBtn}>
-              ส่งรหัสเข้าอีเมล
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={submitCode} noValidate className="space-y-4">
-            <p className="text-base">
-              ส่งรหัส 6 หลักไปที่ <strong>{email}</strong> แล้ว ลองดูในกล่องจดหมาย หรือโฟลเดอร์สแปมอีกทีนะ
-            </p>
-            <div>
-              <label htmlFor="login-code" className="mb-1 block text-base font-semibold">
-                รหัส 6 หลัก
-              </label>
-              <input
-                id="login-code"
-                name="code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                pattern="[0-9]*"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                aria-invalid={codeError ? true : undefined}
-                aria-describedby={codeError ? "login-code-error" : undefined}
-                className={`${inputClass} tracking-[0.4em] text-center text-xl`}
-              />
-              {codeError ? (
-                <p id="login-code-error" role="alert" className={errorClass}>
-                  {codeError}
-                </p>
-              ) : null}
-            </div>
-            <button type="submit" disabled={busy} className={primaryBtn}>
-              ยืนยันรหัส
-            </button>
-            <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="kl-login-layout">
+        <div className="kl-login-art" aria-hidden="true">
+          <img src="/konlanid/assets/helping-hand.webp" alt="" width="800" height="800" />
+        </div>
+        <div className="kl-login-card space-y-6">
+          {/* Always mounted so screen readers pick up changes. Announces once when the resend cooldown starts and once when it ends, not every second. */}
+          <p className="sr-only" aria-live="polite">
+            {announcement}
+          </p>
+          {step === "email" ? (
+            <form onSubmit={requestCode} noValidate className="space-y-4">
+              <p className="text-base">ใช้อีเมลของทีม เราจะส่งรหัส 6 หลักไปให้ ไม่ต้องจำรหัสผ่านนะ</p>
+              <div>
+                <label htmlFor="login-email" className="mb-1 block text-base font-semibold">
+                  อีเมล
+                </label>
+                <input
+                  id="login-email"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  aria-invalid={emailError ? true : undefined}
+                  aria-describedby={emailError ? "login-email-error" : undefined}
+                  className={inputClass}
+                />
+                {emailError ? (
+                  <p id="login-email-error" role="alert" className={errorClass}>
+                    {emailError}
+                  </p>
+                ) : null}
+              </div>
+              <button type="submit" disabled={busy} className={`${primaryBtn} w-full`}>
+                ส่งรหัสเข้าอีเมล
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={submitCode} noValidate className="space-y-4">
+              <p className="text-base">
+                ส่งรหัส 6 หลักไปที่ <strong>{email}</strong> แล้ว ลองดูในกล่องจดหมาย หรือโฟลเดอร์สแปมอีกทีนะ
+              </p>
+              <div>
+                <label htmlFor="login-code" className="mb-1 block text-base font-semibold">
+                  รหัส 6 หลัก
+                </label>
+                <input
+                  id="login-code"
+                  name="code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]*"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  aria-invalid={codeError ? true : undefined}
+                  aria-describedby={codeError ? "login-code-error" : undefined}
+                  className={`${inputClass} tracking-[0.4em] text-center text-xl`}
+                />
+                {codeError ? (
+                  <p id="login-code-error" role="alert" className={errorClass}>
+                    {codeError}
+                  </p>
+                ) : null}
+              </div>
+              <button type="submit" disabled={busy} className={`${primaryBtn} w-full`}>
+                ยืนยันรหัส
+              </button>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => requestCode()}
+                  disabled={busy || cooldown > 0}
+                  className={`${secondaryBtn} sm:w-auto`}
+                >
+                  ขอรหัสใหม่
+                </button>
+                {cooldown > 0 ? (
+                  <span className="text-base text-[var(--kl-muted)]">ขอใหม่ได้ในอีก {cooldown} วินาที</span>
+                ) : null}
+              </div>
               <button
                 type="button"
-                onClick={() => requestCode()}
-                disabled={busy || cooldown > 0}
-                className={`${secondaryBtn} sm:w-auto`}
+                className={linkBtn}
+                onClick={() => {
+                  setStep("email");
+                  setCode("");
+                  setCodeError("");
+                  setCooldown(0);
+                }}
               >
-                ขอรหัสใหม่
+                เปลี่ยนอีเมล
               </button>
-              {cooldown > 0 ? (
-                <span className="text-base text-[var(--kl-muted)]">ขอใหม่ได้ในอีก {cooldown} วินาที</span>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className={linkBtn}
-              onClick={() => {
-                setStep("email");
-                setCode("");
-                setCodeError("");
-                setCooldown(0);
-              }}
-            >
-              เปลี่ยนอีเมล
+            </form>
+          )}
+
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-[var(--kl-border)]" />
+            <span className="text-base text-[var(--kl-muted)]">หรือ</span>
+            <span className="h-px flex-1 bg-[var(--kl-border)]" />
+          </div>
+
+          <div>
+            <button type="button" onClick={google} className={`${secondaryBtn} w-full`}>
+              เข้าสู่ระบบด้วย Google
             </button>
-          </form>
-        )}
-
-        <div className="flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-[var(--kl-border)]" />
-          <span className="text-base text-[var(--kl-muted)]">หรือ</span>
-          <span className="h-px flex-1 bg-[var(--kl-border)]" />
-        </div>
-
-        <div>
-          <button type="button" onClick={google} className={secondaryBtn}>
-            เข้าสู่ระบบด้วย Google
-          </button>
-          {googleError ? (
-            <p role="alert" className={errorClass}>
-              {googleError}
-            </p>
-          ) : null}
+            {googleError ? (
+              <p role="alert" className={errorClass}>
+                {googleError}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
     </KlShell>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { ArrowUpRight } from "lucide-react";
 import { StatusPill, type StatusTone } from "@/components/kl/StatusPill";
 import { STATUS_LABELS } from "@/lib/admin-messages";
 import { getAdminOverview, type AdminOverview } from "@/lib/admin-overview.functions";
@@ -72,20 +73,20 @@ export function AdminOverviewPage() {
   ];
 
   return (
-    <section aria-labelledby="admin-overview-heading">
-      <h2 id="admin-overview-heading" className="mb-4 text-xl font-bold">
+    <section aria-labelledby="admin-overview-heading" className="kl-overview">
+      <h2 id="admin-overview-heading" className="kl-page-heading">
         ภาพรวม
       </h2>
-      <ul className="grid gap-4 sm:grid-cols-3">
+      <ul className="kl-stats-grid">
         {cards.map((card) => (
           <li key={card.href}>
             <a
               href={card.href}
-              className="flex min-h-11 flex-col gap-3 rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-5 no-underline"
+              className={`kl-stat-card kl-stat-card--${card.tone}`}
             >
-              <StatusPill tone={card.tone}>{card.label}</StatusPill>
+              <div className="kl-stat-top"><StatusPill tone={card.tone}>{card.label}</StatusPill><ArrowUpRight size={20} aria-hidden="true" /></div>
               <span className="text-[var(--kl-ink)]">
-                <span className="text-4xl font-bold">{card.value}</span>{" "}
+                <span className="kl-stat-number">{card.value}</span>{" "}
                 <span className="text-base">{card.unit}</span>
               </span>
             </a>
