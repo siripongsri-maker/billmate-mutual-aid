@@ -17,6 +17,8 @@ create table if not exists public.contact_messages (
 
 alter table public.contact_messages enable row level security;
 
+drop policy if exists "Anyone can send a contact message" on public.contact_messages;
+
 create policy "Anyone can send a contact message"
   on public.contact_messages
   for insert
@@ -24,3 +26,6 @@ create policy "Anyone can send a contact message"
   with check (status = 'new' and team_note is null);
 
 grant insert on public.contact_messages to anon, authenticated;
+
+-- Make the new table visible to the API right away.
+notify pgrst, 'reload schema';
