@@ -71,7 +71,9 @@ describe("/admin/messages", () => {
     expect(await screen.findByRole("heading", { name: TOPIC_LABELS.paid })).toBeInTheDocument();
     expect(screen.getByText(/B-102/)).toBeInTheDocument();
     expect(screen.getByText(/฿1,250/)).toBeInTheDocument();
-    expect(screen.getByText(new Date("2026-10-26T05:30:00.000Z").toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }))).toBeInTheDocument();
+    // 05:30 UTC is 12:30 in Bangkok, whatever timezone the browser or test runner is in.
+    expect(screen.getByText(new Date("2026-10-26T05:30:00.000Z").toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }))).toBeInTheDocument();
+    expect(screen.getByText(/12[:.]30/)).toBeInTheDocument();
   });
 
   it("shows the status as text and counts on the filter chips", async () => {

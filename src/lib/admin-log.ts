@@ -36,6 +36,14 @@ export type ListAuditResult = {
   hasMore: boolean;
 };
 
+/** Display name if the person has one, else their sign-in email, else the "unknown" label. */
+export function pickActorName(displayName: string | null | undefined, email: string | null | undefined): string {
+  const name = displayName?.trim();
+  if (name) return name;
+  const mail = email?.trim();
+  return mail ? mail : UNKNOWN_ACTOR;
+}
+
 /** Own-property lookup so values such as "constructor" are never mistaken for a label. */
 function labelOf(labels: Record<string, string>, value: unknown): string {
   if (typeof value !== "string" || value === "") return UNKNOWN_VALUE;
@@ -49,8 +57,16 @@ function labelOf(labels: Record<string, string>, value: unknown): string {
 export function describeAction(action: string, detail: Record<string, unknown>): string {
   const d: Record<string, unknown> = detail !== null && typeof detail === "object" ? detail : {};
   switch (action) {
-    case "message.update":
-      return `เปลี่ยนสถานะข้อความจาก ${labelOf(STATUS_LABELS, d["from"])} เป็น ${labelOf(STATUS_LABELS, d["to"])}`;
+    case "message.update": {
+      const from = labelOf(STATUS_LABELS, d["from"]);
+      const to = labelOf(STATUS_LABELS, d["to"]);
+      // Entries written before noteChanged existed have no flag and read as status-only changes.
+      const noteChanged = d["noteChanged"] === true;
+      const statusChanged = d["from"] !== d["to"];
+      if (noteChanged && !statusChanged) return "แก้โน้ตทีมของข้อความ";
+      if (noteChanged) return `เปลี่ยนสถานะข้อความจาก ${from} เป็น ${to} และแก้โน้ตทีม`;
+      return `เปลี่ยนสถานะข้อความจาก ${from} เป็น ${to}`;
+    }
     case "team.set_role": {
       const email = typeof d["email"] === "string" && d["email"] !== "" ? d["email"] : UNKNOWN_EMAIL;
       return `ตั้งบทบาท ${email} เป็น ${labelOf(ROLE_LABELS, d["to"])}`;

@@ -121,7 +121,7 @@ describe("/admin", () => {
     expect(await screen.findByText("ข้อความใหม่")).toBeInTheDocument();
     const newCard = screen.getByRole("link", { name: /ข้อความใหม่.*7.*ข้อความ/ });
     expect(newCard).toHaveAttribute("href", "/admin/messages?status=new");
-    expect(screen.getByRole("link", { name: /กำลังดำเนินการ.*3.*ข้อความ/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /กำลังดูแล.*3.*ข้อความ/ })).toHaveAttribute(
       "href",
       "/admin/messages?status=in_progress",
     );

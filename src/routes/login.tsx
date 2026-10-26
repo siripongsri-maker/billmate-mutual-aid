@@ -45,6 +45,14 @@ export function LoginPage({ next }: { next: string }) {
   }, [session, next, navigate]);
 
   const counting = cooldown > 0;
+  const [announcement, setAnnouncement] = useState("");
+  const [wasCounting, setWasCounting] = useState(false);
+  if (counting !== wasCounting) {
+    setWasCounting(counting);
+    if (counting) setAnnouncement(`ขอรหัสใหม่ได้ใน ${RESEND_SECONDS} วินาที`);
+    else if (step === "code") setAnnouncement("ขอรหัสใหม่ได้แล้ว");
+    else setAnnouncement("");
+  }
   useEffect(() => {
     if (!counting) return;
     const id = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
@@ -60,7 +68,7 @@ export function LoginPage({ next }: { next: string }) {
     }
     setEmailError("");
     setBusy(true);
-    const res = await sendEmailCode(clean);
+    const res = await sendEmailCode(clean, next);
     setBusy(false);
     if (!res.ok) {
       // On the code step a failed resend keeps the person where they are.
@@ -97,6 +105,10 @@ export function LoginPage({ next }: { next: string }) {
   return (
     <KlShell title="เข้าสู่ระบบ">
       <div className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-5 sm:p-7">
+        {/* Always mounted so screen readers pick up changes. Announces once when the resend cooldown starts and once when it ends, not every second. */}
+        <p className="sr-only" aria-live="polite">
+          {announcement}
+        </p>
         {step === "email" ? (
           <form onSubmit={requestCode} noValidate className="space-y-4">
             <p className="text-base">ใช้อีเมลของทีม เราจะส่งรหัส 6 หลักไปให้ ไม่ต้องจำรหัสผ่านนะ</p>
@@ -129,7 +141,7 @@ export function LoginPage({ next }: { next: string }) {
         ) : (
           <form onSubmit={submitCode} noValidate className="space-y-4">
             <p className="text-base">
-              ส่งรหัส 6 หลักไปที่ <strong>{email}</strong> แล้ว ลองดูในกล่องจดหมาย หรือโฟลเดอร์สแปมอีกที นะ
+              ส่งรหัส 6 หลักไปที่ <strong>{email}</strong> แล้ว ลองดูในกล่องจดหมาย หรือโฟลเดอร์สแปมอีกทีนะ
             </p>
             <div>
               <label htmlFor="login-code" className="mb-1 block text-base font-semibold">
@@ -168,9 +180,7 @@ export function LoginPage({ next }: { next: string }) {
                 ขอรหัสใหม่
               </button>
               {cooldown > 0 ? (
-                <span className="text-base text-[var(--kl-muted)]" aria-live="polite">
-                  ขอใหม่ได้ในอีก {cooldown} วินาที
-                </span>
+                <span className="text-base text-[var(--kl-muted)]">ขอใหม่ได้ในอีก {cooldown} วินาที</span>
               ) : null}
             </div>
             <button

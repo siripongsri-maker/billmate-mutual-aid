@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireAdmin } from "@/lib/admin-middleware";
 import {
   AUDIT_PAGE_SIZE,
-  UNKNOWN_ACTOR,
   listAuditSchema,
+  pickActorName,
   type AuditItem,
   type JsonValue,
   type ListAuditResult,
@@ -48,6 +48,7 @@ export const listAudit = createServerFn({ method: "GET" })
     // One lookup for every actor on the page, not one query per row.
     const actorIds = [...new Set(page.map((r) => r.actor_id).filter((id): id is string => id !== null))];
     const names = new Map<string, string>();
+    const emails = new Map<string, string>();
     if (actorIds.length > 0) {
       const { data: profiles, error: nameError } = await adminDb
         .from("profiles")
@@ -58,12 +59,30 @@ export const listAudit = createServerFn({ method: "GET" })
       for (const p of profiles ?? []) {
         if (p.display_name && p.display_name.trim() !== "") names.set(p.user_id, p.display_name);
       }
+
+      // Staff who sign in by email code have no display name: fall back to their email, only for those ids.
+      // A failed lookup just leaves that actor as "unknown"; it must not fail the whole page.
+      const unresolved = actorIds.filter((id) => !names.has(id));
+      await Promise.all(
+        unresolved.map(async (id) => {
+          try {
+            const { data: user, error: userError } = await adminDb.auth.admin.getUserById(id);
+            const email = userError ? undefined : user?.user?.email;
+            if (email) emails.set(id, email);
+          } catch {
+            // ignored on purpose, see above
+          }
+        }),
+      );
     }
 
     const items: AuditItem[] = page.map((r) => ({
       id: r.id,
       at: r.created_at,
-      actorName: (r.actor_id !== null ? names.get(r.actor_id) : undefined) ?? UNKNOWN_ACTOR,
+      actorName: pickActorName(
+        r.actor_id !== null ? names.get(r.actor_id) : undefined,
+        r.actor_id !== null ? emails.get(r.actor_id) : undefined,
+      ),
       action: r.action,
       targetType: r.target_type,
       targetId: r.target_id,

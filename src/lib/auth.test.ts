@@ -53,8 +53,22 @@ describe("sendEmailCode", () => {
   it("asks Supabase for an emailed code and allows new users", async () => {
     signInWithOtp.mockResolvedValue({ error: null });
     const res = await sendEmailCode("a@b.co");
-    expect(signInWithOtp).toHaveBeenCalledWith({ email: "a@b.co", options: { shouldCreateUser: true } });
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      email: "a@b.co",
+      options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/login?next=%2F` },
+    });
     expect(res).toEqual({ ok: true });
+  });
+  it("passes the page's next path into the magic-link redirect", async () => {
+    signInWithOtp.mockResolvedValue({ error: null });
+    await sendEmailCode("a@b.co", "/admin/messages?status=new");
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      email: "a@b.co",
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/login?next=${encodeURIComponent("/admin/messages?status=new")}`,
+      },
+    });
   });
   it("turns a rate-limit error into a Thai message", async () => {
     signInWithOtp.mockResolvedValue({ error: { status: 429, code: "over_email_send_rate_limit", message: "x" } });

@@ -34,8 +34,15 @@ function toResult(error: AuthErrorLike | null): AuthResult {
   return error ? { ok: false, message: authErrorMessage(error) } : { ok: true };
 }
 
-export async function sendEmailCode(email: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+export async function sendEmailCode(email: string, next = "/"): Promise<AuthResult> {
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      // If the email template carries a magic link, it still lands back on /login.
+      emailRedirectTo: `${window.location.origin}/login?next=${encodeURIComponent(next)}`,
+    },
+  });
   return toResult(error);
 }
 

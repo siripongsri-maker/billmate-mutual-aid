@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { StatusPill, type StatusTone } from "@/components/kl/StatusPill";
+import { STATUS_LABELS } from "@/lib/admin-messages";
 import { getAdminOverview, type AdminOverview } from "@/lib/admin-overview.functions";
 
 export const Route = createFileRoute("/admin/")({
@@ -61,7 +62,7 @@ export function AdminOverviewPage() {
   const cards: Card[] = [
     { label: "ข้อความใหม่", value: overview.newMessages, unit: "ข้อความ", href: "/admin/messages?status=new", tone: "new" },
     {
-      label: "กำลังดำเนินการ",
+      label: STATUS_LABELS.in_progress,
       value: overview.inProgressMessages,
       unit: "ข้อความ",
       href: "/admin/messages?status=in_progress",

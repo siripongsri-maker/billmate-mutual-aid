@@ -55,7 +55,7 @@ describe("LoginPage", () => {
   it("sends the code and then shows the code field", async () => {
     render(<LoginPage next="/admin" />);
     await submitEmail("team@example.org");
-    expect(sendEmailCode).toHaveBeenCalledWith("team@example.org");
+    expect(sendEmailCode).toHaveBeenCalledWith("team@example.org", "/admin");
     const input = screen.getByLabelText("รหัส 6 หลัก");
     expect(input).toHaveAttribute("inputmode", "numeric");
     expect(input).toHaveAttribute("autocomplete", "one-time-code");
@@ -75,6 +75,27 @@ describe("LoginPage", () => {
       vi.advanceTimersByTime(1_000);
     });
     expect(screen.getByRole("button", { name: /ขอรหัสใหม่/ })).toBeEnabled();
+  });
+
+  it("announces the cooldown once at start and once at the end, not every second", async () => {
+    vi.useFakeTimers();
+    render(<LoginPage next="/admin" />);
+    await submitEmail("team@example.org");
+    const live = () => document.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(live()).toHaveTextContent("ขอรหัสใหม่ได้ใน 60 วินาที");
+    // the ticking number is on screen but is not itself a live region
+    const ticking = screen.getByText(/ขอใหม่ได้ในอีก 60 วินาที/);
+    expect(ticking.closest("[aria-live]")).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(screen.getByText(/ขอใหม่ได้ในอีก 50 วินาที/).closest("[aria-live]")).toBeNull();
+    expect(live()).toHaveTextContent("ขอรหัสใหม่ได้ใน 60 วินาที");
+    act(() => {
+      vi.advanceTimersByTime(50_000);
+    });
+    expect(live()).toHaveTextContent("ขอรหัสใหม่ได้แล้ว");
+    expect(screen.queryByText(/ขอใหม่ได้ในอีก/)).toBeNull();
   });
 
   it("shows the failure message and keeps the typed code when verify fails", async () => {

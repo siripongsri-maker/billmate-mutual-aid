@@ -47,7 +47,7 @@ const primaryBtn =
 const errorClass = "text-base font-medium text-[var(--kl-coral-ink)]";
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" });
 }
 
 type Phase = "loading" | "error" | "ready";

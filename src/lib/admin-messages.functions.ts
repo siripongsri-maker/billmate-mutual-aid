@@ -75,21 +75,27 @@ export const updateMessage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { data: current, error: loadError } = await supabaseAdmin
       .from("contact_messages")
-      .select("status")
+      .select("status, team_note")
       .eq("id", data.id)
       .maybeSingle();
     if (loadError) throw new Error(`Could not load message: ${loadError.message}`);
     if (!current) throw new Error("Message not found");
 
+    const newNote = data.teamNote === "" ? null : data.teamNote;
     const { error } = await supabaseAdmin
       .from("contact_messages")
-      .update({ status: data.status, team_note: data.teamNote === "" ? null : data.teamNote })
+      .update({ status: data.status, team_note: newNote })
       .eq("id", data.id);
     if (error) throw new Error(`Could not update message: ${error.message}`);
 
-    await logAction(context.userId, "message.update", "contact_message", data.id, {
-      from: current.status,
-      to: data.status,
-    });
+    const noteChanged = (current.team_note ?? null) !== newNote;
+    // A save that changed nothing is not worth an audit entry.
+    if (current.status !== data.status || noteChanged) {
+      await logAction(context.userId, "message.update", "contact_message", data.id, {
+        from: current.status,
+        to: data.status,
+        noteChanged,
+      });
+    }
     return { ok: true };
   });
