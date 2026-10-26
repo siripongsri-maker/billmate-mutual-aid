@@ -10,33 +10,219 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BrowseRouteImport } from './routes/browse'
+import { Route as CorporateRouteImport } from './routes/corporate'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as ImpactRouteImport } from './routes/impact'
+import { Route as ModeratorRouteImport } from './routes/moderator'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as BillsIdRouteImport } from './routes/bills.$id'
+import { Route as CirclesIndexRouteImport } from './routes/circles.index'
+import { Route as CirclesIdRouteImport } from './routes/circles.$id'
+import { Route as RequestsIndexRouteImport } from './routes/requests.index'
+import { Route as RequestsNewRouteImport } from './routes/requests.new'
+import { Route as BillsIdContributeRouteImport } from './routes/bills.$id_.contribute'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrowseRoute = BrowseRouteImport.update({
+  id: '/browse',
+  path: '/browse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CorporateRoute = CorporateRouteImport.update({
+  id: '/corporate',
+  path: '/corporate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImpactRoute = ImpactRouteImport.update({
+  id: '/impact',
+  path: '/impact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModeratorRoute = ModeratorRouteImport.update({
+  id: '/moderator',
+  path: '/moderator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillsIdRoute = BillsIdRouteImport.update({
+  id: '/bills/$id',
+  path: '/bills/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CirclesIndexRoute = CirclesIndexRouteImport.update({
+  id: '/circles/',
+  path: '/circles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CirclesIdRoute = CirclesIdRouteImport.update({
+  id: '/circles/$id',
+  path: '/circles/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsIndexRoute = RequestsIndexRouteImport.update({
+  id: '/requests/',
+  path: '/requests/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsNewRoute = RequestsNewRouteImport.update({
+  id: '/requests/new',
+  path: '/requests/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillsIdContributeRoute = BillsIdContributeRouteImport.update({
+  id: '/bills/$id_/contribute',
+  path: '/bills/$id/contribute',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/browse': typeof BrowseRoute
+  '/corporate': typeof CorporateRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/impact': typeof ImpactRoute
+  '/moderator': typeof ModeratorRoute
+  '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/profile': typeof ProfileRoute
+  '/bills/$id': typeof BillsIdRoute
+  '/circles/$id': typeof CirclesIdRoute
+  '/requests/new': typeof RequestsNewRoute
+  '/circles/': typeof CirclesIndexRoute
+  '/requests/': typeof RequestsIndexRoute
+  '/bills/$id/contribute': typeof BillsIdContributeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/browse': typeof BrowseRoute
+  '/corporate': typeof CorporateRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/impact': typeof ImpactRoute
+  '/moderator': typeof ModeratorRoute
+  '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/profile': typeof ProfileRoute
+  '/bills/$id': typeof BillsIdRoute
+  '/circles/$id': typeof CirclesIdRoute
+  '/requests/new': typeof RequestsNewRoute
+  '/circles': typeof CirclesIndexRoute
+  '/requests': typeof RequestsIndexRoute
+  '/bills/$id/contribute': typeof BillsIdContributeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/browse': typeof BrowseRoute
+  '/corporate': typeof CorporateRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/impact': typeof ImpactRoute
+  '/moderator': typeof ModeratorRoute
+  '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/profile': typeof ProfileRoute
+  '/bills/$id': typeof BillsIdRoute
+  '/circles/$id': typeof CirclesIdRoute
+  '/requests/new': typeof RequestsNewRoute
+  '/circles/': typeof CirclesIndexRoute
+  '/requests/': typeof RequestsIndexRoute
+  '/bills/$id_/contribute': typeof BillsIdContributeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/browse'
+    | '/corporate'
+    | '/how-it-works'
+    | '/impact'
+    | '/moderator'
+    | '/notifications'
+    | '/onboarding'
+    | '/profile'
+    | '/bills/$id'
+    | '/circles/$id'
+    | '/requests/new'
+    | '/circles/'
+    | '/requests/'
+    | '/bills/$id/contribute'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/browse'
+    | '/corporate'
+    | '/how-it-works'
+    | '/impact'
+    | '/moderator'
+    | '/notifications'
+    | '/onboarding'
+    | '/profile'
+    | '/bills/$id'
+    | '/circles/$id'
+    | '/requests/new'
+    | '/circles'
+    | '/requests'
+    | '/bills/$id/contribute'
+  id:
+    | '__root__'
+    | '/'
+    | '/browse'
+    | '/corporate'
+    | '/how-it-works'
+    | '/impact'
+    | '/moderator'
+    | '/notifications'
+    | '/onboarding'
+    | '/profile'
+    | '/bills/$id'
+    | '/circles/$id'
+    | '/requests/new'
+    | '/circles/'
+    | '/requests/'
+    | '/bills/$id_/contribute'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BrowseRoute: typeof BrowseRoute
+  CorporateRoute: typeof CorporateRoute
+  HowItWorksRoute: typeof HowItWorksRoute
+  ImpactRoute: typeof ImpactRoute
+  ModeratorRoute: typeof ModeratorRoute
+  NotificationsRoute: typeof NotificationsRoute
+  OnboardingRoute: typeof OnboardingRoute
+  ProfileRoute: typeof ProfileRoute
+  BillsIdRoute: typeof BillsIdRoute
+  CirclesIdRoute: typeof CirclesIdRoute
+  RequestsNewRoute: typeof RequestsNewRoute
+  CirclesIndexRoute: typeof CirclesIndexRoute
+  RequestsIndexRoute: typeof RequestsIndexRoute
+  BillsIdContributeRoute: typeof BillsIdContributeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +234,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/browse': {
+      id: '/browse'
+      path: '/browse'
+      fullPath: '/browse'
+      preLoaderRoute: typeof BrowseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/corporate': {
+      id: '/corporate'
+      path: '/corporate'
+      fullPath: '/corporate'
+      preLoaderRoute: typeof CorporateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/impact': {
+      id: '/impact'
+      path: '/impact'
+      fullPath: '/impact'
+      preLoaderRoute: typeof ImpactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/moderator': {
+      id: '/moderator'
+      path: '/moderator'
+      fullPath: '/moderator'
+      preLoaderRoute: typeof ModeratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bills/$id': {
+      id: '/bills/$id'
+      path: '/bills/$id'
+      fullPath: '/bills/$id'
+      preLoaderRoute: typeof BillsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circles/': {
+      id: '/circles/'
+      path: '/circles'
+      fullPath: '/circles/'
+      preLoaderRoute: typeof CirclesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circles/$id': {
+      id: '/circles/$id'
+      path: '/circles/$id'
+      fullPath: '/circles/$id'
+      preLoaderRoute: typeof CirclesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests/': {
+      id: '/requests/'
+      path: '/requests'
+      fullPath: '/requests/'
+      preLoaderRoute: typeof RequestsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests/new': {
+      id: '/requests/new'
+      path: '/requests/new'
+      fullPath: '/requests/new'
+      preLoaderRoute: typeof RequestsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bills/$id_/contribute': {
+      id: '/bills/$id_/contribute'
+      path: '/bills/$id/contribute'
+      fullPath: '/bills/$id/contribute'
+      preLoaderRoute: typeof BillsIdContributeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BrowseRoute: BrowseRoute,
+  CorporateRoute: CorporateRoute,
+  HowItWorksRoute: HowItWorksRoute,
+  ImpactRoute: ImpactRoute,
+  ModeratorRoute: ModeratorRoute,
+  NotificationsRoute: NotificationsRoute,
+  OnboardingRoute: OnboardingRoute,
+  ProfileRoute: ProfileRoute,
+  BillsIdRoute: BillsIdRoute,
+  CirclesIdRoute: CirclesIdRoute,
+  RequestsNewRoute: RequestsNewRoute,
+  CirclesIndexRoute: CirclesIndexRoute,
+  RequestsIndexRoute: RequestsIndexRoute,
+  BillsIdContributeRoute: BillsIdContributeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
