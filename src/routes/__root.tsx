@@ -3,6 +3,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  redirect,
   useRouter,
   useRouterState,
   HeadContent,
@@ -17,6 +18,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider } from "@/lib/store";
 import { AppShell } from "@/components/AppShell";
 import { usesKlShell } from "@/components/kl/KlShell";
+import { legacyRedirect } from "@/lib/legacy-routes";
 
 function NotFoundComponent() {
   return (
@@ -54,6 +56,10 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: ({ location }) => {
+    const target = legacyRedirect(location.pathname);
+    if (target) throw redirect({ href: target, reloadDocument: true });
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
