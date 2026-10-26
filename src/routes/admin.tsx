@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
+import { LayoutDashboard, Inbox, Users, History } from "lucide-react";
 import { KlShell } from "@/components/kl/KlShell";
 import { supabase } from "@/integrations/supabase/client";
 import { isForbidden, isUnauthorized } from "@/lib/admin-access";
@@ -21,14 +22,13 @@ function AdminRoute() {
 }
 
 const NAV_ITEMS = [
-  { label: "ภาพรวม", href: "/admin" },
-  { label: "ข้อความ", href: "/admin/messages" },
-  { label: "ทีม", href: "/admin/team" },
-  { label: "บันทึก", href: "/admin/log" },
+  { label: "ภาพรวม", href: "/admin", icon: LayoutDashboard },
+  { label: "ข้อความ", href: "/admin/messages", icon: Inbox },
+  { label: "ทีม", href: "/admin/team", icon: Users },
+  { label: "บันทึก", href: "/admin/log", icon: History },
 ] as const;
 
-const btnClass =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--kl-green)] px-4 py-2 text-base font-semibold text-white";
+const btnClass = "kl-button kl-button--primary";
 const linkClass = "inline-flex min-h-11 items-center px-1 text-base font-semibold text-[var(--kl-green)] underline underline-offset-4";
 
 type State =
@@ -127,26 +127,25 @@ export function AdminLayout({ pathname = "/admin", children }: { pathname?: stri
 
   return (
     <KlShell title="ทีมคนละนิด">
-      <nav aria-label="เมนูทีมงาน" className="mb-6 flex flex-wrap gap-2">
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
-          return (
-            <a
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center rounded-lg border px-4 py-2 text-base font-semibold no-underline ${
-                active
-                  ? "border-[var(--kl-green)] bg-[var(--kl-green)] !text-white"
-                  : "border-[var(--kl-border)] bg-[var(--kl-paper)]"
-              }`}
-            >
-              {item.label}
-            </a>
-          );
-        })}
-      </nav>
-      {children}
+      <div className="kl-admin-workspace">
+        <nav aria-label="เมนูทีมงาน" className="kl-admin-nav">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(pathname, item.href);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className="kl-admin-nav-link"
+              >
+                <item.icon size={20} aria-hidden="true" />
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
+        <div className="kl-admin-content">{children}</div>
+      </div>
     </KlShell>
   );
 }

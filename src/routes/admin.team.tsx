@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { UserRound } from "lucide-react";
 import { StatusPill } from "@/components/kl/StatusPill";
 import { getAdminMe, type AdminMe } from "@/lib/admin-me.functions";
 import { ROLE_LABELS, type TeamMember } from "@/lib/admin-team";
@@ -9,12 +10,9 @@ export const Route = createFileRoute("/admin/team")({
   component: TeamPage,
 });
 
-const fieldClass =
-  "block w-full min-h-11 rounded-lg border border-[var(--kl-muted)] bg-white px-3 py-2 text-base text-[var(--kl-ink)]";
-const primaryBtn =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--kl-green)] px-4 py-2 text-base font-semibold text-white disabled:opacity-60";
-const secondaryBtn =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--kl-border)] bg-[var(--kl-paper)] px-4 py-2 text-base font-semibold text-[var(--kl-ink)] disabled:opacity-60";
+const fieldClass = "kl-field";
+const primaryBtn = "kl-button kl-button--primary";
+const secondaryBtn = "kl-button kl-button--secondary";
 const errorClass = "text-base font-medium text-[var(--kl-coral-ink)]";
 
 const SAVE_FAILED = "บันทึกไม่สำเร็จ ลองอีกครั้งนะ";
@@ -79,7 +77,7 @@ export function TeamPage() {
 
   return (
     <section aria-labelledby="admin-team-heading" className="min-w-0">
-      <h2 id="admin-team-heading" className="mb-4 text-xl font-bold">
+      <h2 id="admin-team-heading" className="kl-page-heading">
         ทีมงาน
       </h2>
 
@@ -126,7 +124,7 @@ function AddAdminForm({ onAdded }: { onAdded: () => Promise<boolean> }) {
   }
 
   return (
-    <form onSubmit={submit} className="mb-6 space-y-3 rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-4 sm:p-5">
+    <form onSubmit={submit} className="kl-team-invite">
       <div>
         <label htmlFor="team-add-email" className="mb-1 block text-base font-semibold">
           อีเมลของคนที่จะเพิ่มเป็นแอดมิน
@@ -192,8 +190,9 @@ function MemberCard({
   }
 
   return (
-    <article className="min-w-0 break-words rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <article className="kl-member-card">
+      <div className="kl-member-header">
+        <span className="kl-member-avatar" aria-hidden="true"><UserRound size={24} /></span>
         <div className="min-w-0">
           <h3 className="break-words">{m.displayName ?? "ไม่ได้ระบุชื่อเรียก"}</h3>
           <p className="break-all text-base text-[var(--kl-muted)]">{m.email}</p>

@@ -40,10 +40,8 @@ const STATUS_TONES: Record<MessageStatus, StatusTone> = {
 
 const EMPTY_COUNTS: MessageCounts = { new: 0, in_progress: 0, done: 0, spam: 0 };
 
-const fieldClass =
-  "block w-full min-h-11 rounded-lg border border-[var(--kl-muted)] bg-white px-3 py-2 text-base text-[var(--kl-ink)]";
-const primaryBtn =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--kl-green)] px-4 py-2 text-base font-semibold text-white disabled:opacity-60";
+const fieldClass = "kl-field";
+const primaryBtn = "kl-button kl-button--primary";
 const errorClass = "text-base font-medium text-[var(--kl-coral-ink)]";
 
 function formatTime(iso: string): string {
@@ -123,11 +121,11 @@ export function MessagesInbox({
 
   return (
     <section aria-labelledby="admin-messages-heading" className="min-w-0">
-      <h2 id="admin-messages-heading" className="mb-4 text-xl font-bold">
+      <h2 id="admin-messages-heading" className="kl-page-heading">
         ข้อความจากฟอร์มติดต่อ
       </h2>
 
-      <div role="group" aria-label="กรองตามสถานะ" className="mb-5 flex flex-wrap gap-2">
+      <div role="group" aria-label="กรองตามสถานะ" className="kl-message-filters">
         {chips.map((chip) => {
           const pressed = chip.value === status;
           return (
@@ -136,13 +134,9 @@ export function MessagesInbox({
               type="button"
               aria-pressed={pressed}
               onClick={() => onStatusChange(chip.value)}
-              className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-4 py-2 text-base font-semibold ${
-                pressed
-                  ? "border-[var(--kl-green)] bg-[var(--kl-green)] text-white"
-                  : "border-[var(--kl-border)] bg-[var(--kl-paper)] text-[var(--kl-ink)]"
-              }`}
+              className="kl-filter"
             >
-              {chip.label} <span>{chip.count}</span>
+              {chip.label} <span className="kl-filter-count">{chip.count}</span>
             </button>
           );
         })}
@@ -228,39 +222,41 @@ function MessageCard({
   const noteId = `note-${m.id}`;
 
   return (
-    <article className="min-w-0 break-words rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-4 sm:p-5">
-      <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="break-words">{TOPIC_LABELS[m.topic] ?? m.topic}</h3>
-          <time dateTime={m.createdAt} className="text-base text-[var(--kl-muted)]">
-            {formatTime(m.createdAt)}
-          </time>
-        </div>
-        <StatusPill tone={STATUS_TONES[m.status]}>{STATUS_LABELS[m.status]}</StatusPill>
-      </header>
+    <article className="kl-message-card min-w-0 break-words">
+      <div className="kl-message-reading">
+        <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="break-words">{TOPIC_LABELS[m.topic] ?? m.topic}</h3>
+            <time dateTime={m.createdAt} className="text-base text-[var(--kl-muted)]">
+              {formatTime(m.createdAt)}
+            </time>
+          </div>
+          <StatusPill tone={STATUS_TONES[m.status]}>{STATUS_LABELS[m.status]}</StatusPill>
+        </header>
 
-      <dl className="mb-3 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-base">
-        <dt className="text-[var(--kl-muted)]">ชื่อเรียก</dt>
-        <dd className="m-0 break-words">{m.displayName ?? "ไม่ได้ระบุชื่อเรียก"}</dd>
-        <dt className="text-[var(--kl-muted)]">ช่องทางติดต่อ</dt>
-        <dd className="m-0 break-words">{m.contact ? m.contact : "ไม่ได้ให้ช่องทางติดต่อ"}</dd>
-        {m.billId ? (
-          <>
-            <dt className="text-[var(--kl-muted)]">รหัสบิล</dt>
-            <dd className="m-0 break-words">{m.billId}</dd>
-          </>
-        ) : null}
-        {m.amount !== null ? (
-          <>
-            <dt className="text-[var(--kl-muted)]">ยอด</dt>
-            <dd className="m-0">{`฿${m.amount.toLocaleString("th-TH")}`}</dd>
-          </>
-        ) : null}
-      </dl>
+        <dl className="mb-3 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-base">
+          <dt className="text-[var(--kl-muted)]">ชื่อเรียก</dt>
+          <dd className="m-0 break-words">{m.displayName ?? "ไม่ได้ระบุชื่อเรียก"}</dd>
+          <dt className="text-[var(--kl-muted)]">ช่องทางติดต่อ</dt>
+          <dd className="m-0 break-words">{m.contact ? m.contact : "ไม่ได้ให้ช่องทางติดต่อ"}</dd>
+          {m.billId ? (
+            <>
+              <dt className="text-[var(--kl-muted)]">รหัสบิล</dt>
+              <dd className="m-0 break-words">{m.billId}</dd>
+            </>
+          ) : null}
+          {m.amount !== null ? (
+            <>
+              <dt className="text-[var(--kl-muted)]">ยอด</dt>
+              <dd className="m-0">{`฿${m.amount.toLocaleString("th-TH")}`}</dd>
+            </>
+          ) : null}
+        </dl>
 
-      <p className="mb-4 whitespace-pre-wrap break-words rounded-lg bg-[var(--kl-warm)] p-3 text-base">{m.message}</p>
+        <p className="kl-message-body break-words whitespace-pre-wrap">{m.message}</p>
+      </div>
 
-      <div className="space-y-3">
+      <div className="kl-message-tools space-y-3">
         <div>
           <label htmlFor={statusId} className="mb-1 block text-base font-semibold">
             สถานะ

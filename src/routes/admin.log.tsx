@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { History } from "lucide-react";
 import { describeAction, type AuditItem } from "@/lib/admin-log";
 import { listAudit } from "@/lib/admin-log.functions";
 
@@ -7,8 +8,7 @@ export const Route = createFileRoute("/admin/log")({
   component: AuditLog,
 });
 
-const primaryBtn =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--kl-green)] px-4 py-2 text-base font-semibold text-white disabled:opacity-60";
+const primaryBtn = "kl-button kl-button--primary";
 const errorClass = "text-base font-medium text-[var(--kl-coral-ink)]";
 
 /** Always shown in Thai Bangkok time, whatever the viewer's device clock says. */
@@ -69,7 +69,7 @@ export function AuditLog() {
 
   return (
     <section aria-labelledby="admin-log-heading" className="min-w-0">
-      <h2 id="admin-log-heading" className="mb-1 text-xl font-bold">
+      <h2 id="admin-log-heading" className="kl-page-heading kl-page-heading--with-description">
         บันทึกการทำงาน
       </h2>
       <p className="mb-5 text-base text-[var(--kl-muted)]">ดูว่าใครทำอะไรเมื่อไหร่ เรียงจากล่าสุดก่อน แก้ไขหรือลบไม่ได้นะ</p>
@@ -97,7 +97,7 @@ export function AuditLog() {
 
       {phase === "ready" && items.length > 0 ? (
         <>
-          <ul className="space-y-3">
+          <ul className="kl-audit-list">
             {items.map((item) => (
               <li key={item.id} className="min-w-0">
                 <LogCard item={item} />
@@ -125,16 +125,19 @@ export function AuditLog() {
 function LogCard({ item }: { item: AuditItem }) {
   const target = [item.targetType, item.targetId].filter((v): v is string => Boolean(v)).join(" · ");
   return (
-    <article className="min-w-0 break-words rounded-2xl border border-[var(--kl-border)] bg-[var(--kl-paper)] p-4">
-      <p className="mb-1 break-words text-base font-semibold">{describeAction(item.action, item.detail)}</p>
-      <p className="text-base">
-        <span className="text-[var(--kl-muted)]">โดย </span>
-        <span className="break-words">{item.actorName}</span>
-      </p>
+    <article className="kl-audit-card min-w-0 break-words">
+      <span className="kl-audit-icon" aria-hidden="true"><History size={20} /></span>
+      <div className="kl-audit-detail">
+        <p className="mb-1 break-words text-base font-semibold">{describeAction(item.action, item.detail)}</p>
+        <p className="text-base">
+          <span className="text-[var(--kl-muted)]">โดย </span>
+          <span className="break-words">{item.actorName}</span>
+        </p>
+      </div>
       <time dateTime={item.at} className="block text-base text-[var(--kl-muted)]">
         {formatTime(item.at)}
       </time>
-      {target ? <p className="mt-1 break-all text-base text-[var(--kl-muted)]">{target}</p> : null}
+      {target ? <p className="kl-audit-target break-all">{target}</p> : null}
     </article>
   );
 }
