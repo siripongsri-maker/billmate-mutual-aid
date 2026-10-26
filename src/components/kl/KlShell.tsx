@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /** True for routes that use the คนละนิด look (/login and /admin, matched by whole segment). */
 export function usesKlShell(pathname: string): boolean {
-  return /^\/(login|admin)(\/|$)/.test(pathname);
+  return /^\/(login|admin|draft-story)(\/|$)/.test(pathname);
 }
 
 export function KlShell({ title, children }: { title?: string; children: ReactNode }) {
