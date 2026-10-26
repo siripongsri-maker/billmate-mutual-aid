@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as CorporateRouteImport } from './routes/corporate'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
@@ -19,6 +20,7 @@ import { Route as ModeratorRouteImport } from './routes/moderator'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as BillsIdRouteImport } from './routes/bills.$id'
 import { Route as CirclesIndexRouteImport } from './routes/circles.index'
 import { Route as CirclesIdRouteImport } from './routes/circles.$id'
@@ -29,6 +31,11 @@ import { Route as BillsIdContributeRouteImport } from './routes/bills.$id_.contr
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrowseRoute = BrowseRouteImport.update({
@@ -76,6 +83,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const BillsIdRoute = BillsIdRouteImport.update({
   id: '/bills/$id',
   path: '/bills/$id',
@@ -109,6 +121,7 @@ const BillsIdContributeRoute = BillsIdContributeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -121,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
@@ -139,6 +153,7 @@ export interface FileRoutesByTo {
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/admin': typeof AdminIndexRoute
   '/circles': typeof CirclesIndexRoute
   '/requests': typeof RequestsIndexRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
@@ -146,6 +161,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/browse': typeof BrowseRoute
   '/corporate': typeof CorporateRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -158,6 +174,7 @@ export interface FileRoutesById {
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/bills/$id_/contribute': typeof BillsIdContributeRoute
@@ -166,6 +183,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/browse'
     | '/corporate'
     | '/how-it-works'
@@ -178,6 +196,7 @@ export interface FileRouteTypes {
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/admin/'
     | '/circles/'
     | '/requests/'
     | '/bills/$id/contribute'
@@ -196,12 +215,14 @@ export interface FileRouteTypes {
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/admin'
     | '/circles'
     | '/requests'
     | '/bills/$id/contribute'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/browse'
     | '/corporate'
     | '/how-it-works'
@@ -214,6 +235,7 @@ export interface FileRouteTypes {
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/admin/'
     | '/circles/'
     | '/requests/'
     | '/bills/$id_/contribute'
@@ -221,6 +243,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   BrowseRoute: typeof BrowseRoute
   CorporateRoute: typeof CorporateRoute
   HowItWorksRoute: typeof HowItWorksRoute
@@ -245,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/browse': {
@@ -310,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/bills/$id': {
       id: '/bills/$id'
       path: '/bills/$id'
@@ -355,8 +392,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   BrowseRoute: BrowseRoute,
   CorporateRoute: CorporateRoute,
   HowItWorksRoute: HowItWorksRoute,
