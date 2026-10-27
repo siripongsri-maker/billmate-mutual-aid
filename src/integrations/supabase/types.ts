@@ -131,12 +131,56 @@ export type Database = {
         }
         Relationships: []
       }
+      traffic_daily: {
+        Row: {
+          count: number
+          day: string
+          event: string
+          page: string
+          source: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          event: string
+          page: string
+          source: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          event?: string
+          page?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          role: string
+          user_id: string
+        }
+        Insert: {
+          role: string
+          user_id: string
+        }
+        Update: {
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_read_analytics: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      record_traffic: {
+        Args: { p_event: string; p_page: string; p_source: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
