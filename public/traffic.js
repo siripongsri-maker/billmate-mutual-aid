@@ -28,7 +28,7 @@ export function startTracking() {
   const send = (event, page) => {
     if (!page || sent >= 100) return;
     sent++;
-    void fetch('/api/public/traffic', { method:'POST', credentials:'omit', headers:{'Content-Type':'application/json'}, body:JSON.stringify({event,page,source}), keepalive:true }).catch(() => {});
+    void fetch('/api/public/traffic', { method:'POST', credentials:'omit', referrerPolicy:'no-referrer', headers:{'Content-Type':'application/json'}, body:JSON.stringify({event,page,source}), keepalive:true }).catch(() => {});
   };
   const update = () => {
     const path = location.pathname === '/konlanid/index.html' ? (location.hash.slice(1) || '/') : location.pathname;
