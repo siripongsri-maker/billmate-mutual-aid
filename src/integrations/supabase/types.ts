@@ -131,6 +131,59 @@ export type Database = {
         }
         Relationships: []
       }
+      share_daily: {
+        Row: {
+          code: string
+          count: number
+          day: string
+          event: string
+        }
+        Insert: {
+          code: string
+          count?: number
+          day?: string
+          event: string
+        }
+        Update: {
+          code?: string
+          count?: number
+          day?: string
+          event?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_daily_code_fkey"
+            columns: ["code"]
+            isOneToOne: false
+            referencedRelation: "share_links"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      share_links: {
+        Row: {
+          channel: string
+          code: string
+          created_at: string
+          kind: string
+          target_id: string
+        }
+        Insert: {
+          channel: string
+          code: string
+          created_at?: string
+          kind: string
+          target_id: string
+        }
+        Update: {
+          channel?: string
+          code?: string
+          created_at?: string
+          kind?: string
+          target_id?: string
+        }
+        Relationships: []
+      }
       traffic_daily: {
         Row: {
           count: number
@@ -177,6 +230,10 @@ export type Database = {
     Functions: {
       can_read_analytics: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      record_share: {
+        Args: { p_code: string; p_event: string }
+        Returns: undefined
+      }
       record_traffic: {
         Args: { p_event: string; p_page: string; p_source: string }
         Returns: undefined

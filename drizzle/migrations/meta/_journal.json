@@ -29,6 +29,13 @@
       "when": 1793059466500,
       "tag": "0003_restrict_analytics_default_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793059639752,
+      "tag": "0004_channel_share_links",
+      "breakpoints": true
     }
   ]
 }
