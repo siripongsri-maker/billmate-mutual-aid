@@ -19,6 +19,7 @@ import { StoreProvider } from "@/lib/store";
 import { AppShell } from "@/components/AppShell";
 import { usesKlShell } from "@/components/kl/KlShell";
 import { legacyRedirect } from "@/lib/legacy-routes";
+import { TrafficTracker } from '@/components/TrafficTracker';
 
 function NotFoundComponent() {
   return (
@@ -105,6 +106,7 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <QueryClientProvider client={queryClient}>
+      <TrafficTracker />
       <StoreProvider>
         {usesKlShell(pathname) ? (
           <Outlet />

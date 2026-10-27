@@ -1,6 +1,9 @@
 'use strict';
 
 (() => {
+  const trafficScript = document.createElement('script');
+  trafficScript.type = 'module'; trafficScript.src = '/traffic.js';
+  document.head.appendChild(trafficScript);
   const paths = {
     home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
     bills: '<path d="M6 2h9l4 4v16l-3-2-4 2-4-2-3 2V3a1 1 0 0 1 1-1Z"/><path d="M14 2v5h5M8 11h7m-7 4h5"/>',
