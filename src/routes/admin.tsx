@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, Users, History } from "lucide-react";
+import { LayoutDashboard, Inbox, Users, History, ChartNoAxesCombined } from "lucide-react";
 import { KlShell } from "@/components/kl/KlShell";
 import { supabase } from "@/integrations/supabase/client";
 import { isForbidden, isUnauthorized } from "@/lib/admin-access";
@@ -24,6 +24,7 @@ function AdminRoute() {
 
 const NAV_ITEMS = [
   { label: "ภาพรวม", href: "/admin", icon: LayoutDashboard },
+  { label: "ยอดเข้าชม", href: "/admin/analytics", icon: ChartNoAxesCombined },
   { label: "ข้อความ", href: "/admin/messages", icon: Inbox },
   { label: "ทีม", href: "/admin/team", icon: Users },
   { label: "บันทึก", href: "/admin/log", icon: History },

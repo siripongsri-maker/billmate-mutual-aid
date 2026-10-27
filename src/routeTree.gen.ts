@@ -23,6 +23,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminLogRouteImport } from './routes/admin.log'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminTeamRouteImport } from './routes/admin.team'
@@ -31,6 +32,7 @@ import { Route as CirclesIndexRouteImport } from './routes/circles.index'
 import { Route as CirclesIdRouteImport } from './routes/circles.$id'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsNewRouteImport } from './routes/requests.new'
+import { Route as ApiPublicTrafficRouteImport } from './routes/api/public/traffic'
 import { Route as BillsIdContributeRouteImport } from './routes/bills.$id_.contribute'
 
 const IndexRoute = IndexRouteImport.update({
@@ -103,6 +105,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLogRoute = AdminLogRouteImport.update({
   id: '/log',
   path: '/log',
@@ -143,6 +150,11 @@ const RequestsNewRoute = RequestsNewRouteImport.update({
   path: '/requests/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTrafficRoute = ApiPublicTrafficRouteImport.update({
+  id: '/api/public/traffic',
+  path: '/api/public/traffic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BillsIdContributeRoute = BillsIdContributeRouteImport.update({
   id: '/bills/$id_/contribute',
   path: '/bills/$id/contribute',
@@ -163,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/log': typeof AdminLogRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/team': typeof AdminTeamRoute
@@ -172,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
 }
 export interface FileRoutesByTo {
@@ -187,6 +201,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/log': typeof AdminLogRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/team': typeof AdminTeamRoute
@@ -196,6 +211,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/circles': typeof CirclesIndexRoute
   '/requests': typeof RequestsIndexRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
 }
 export interface FileRoutesById {
@@ -213,6 +229,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/log': typeof AdminLogRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/team': typeof AdminTeamRoute
@@ -222,6 +239,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/bills/$id_/contribute': typeof BillsIdContributeRoute
 }
 export interface FileRouteTypes {
@@ -240,6 +258,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/sitemap.xml'
+    | '/admin/analytics'
     | '/admin/log'
     | '/admin/messages'
     | '/admin/team'
@@ -249,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/circles/'
     | '/requests/'
+    | '/api/public/traffic'
     | '/bills/$id/contribute'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -264,6 +284,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/sitemap.xml'
+    | '/admin/analytics'
     | '/admin/log'
     | '/admin/messages'
     | '/admin/team'
@@ -273,6 +294,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/circles'
     | '/requests'
+    | '/api/public/traffic'
     | '/bills/$id/contribute'
   id:
     | '__root__'
@@ -289,6 +311,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/sitemap.xml'
+    | '/admin/analytics'
     | '/admin/log'
     | '/admin/messages'
     | '/admin/team'
@@ -298,6 +321,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/circles/'
     | '/requests/'
+    | '/api/public/traffic'
     | '/bills/$id_/contribute'
   fileRoutesById: FileRoutesById
 }
@@ -320,6 +344,7 @@ export interface RootRouteChildren {
   RequestsNewRoute: typeof RequestsNewRoute
   CirclesIndexRoute: typeof CirclesIndexRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
+  ApiPublicTrafficRoute: typeof ApiPublicTrafficRoute
   BillsIdContributeRoute: typeof BillsIdContributeRoute
 }
 
@@ -423,6 +448,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/log': {
       id: '/admin/log'
       path: '/log'
@@ -479,6 +511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RequestsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/traffic': {
+      id: '/api/public/traffic'
+      path: '/api/public/traffic'
+      fullPath: '/api/public/traffic'
+      preLoaderRoute: typeof ApiPublicTrafficRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bills/$id_/contribute': {
       id: '/bills/$id_/contribute'
       path: '/bills/$id/contribute'
@@ -490,6 +529,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminLogRoute: typeof AdminLogRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminTeamRoute: typeof AdminTeamRoute
@@ -497,6 +537,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminLogRoute: AdminLogRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminTeamRoute: AdminTeamRoute,
@@ -524,6 +565,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsNewRoute: RequestsNewRoute,
   CirclesIndexRoute: CirclesIndexRoute,
   RequestsIndexRoute: RequestsIndexRoute,
+  ApiPublicTrafficRoute: ApiPublicTrafficRoute,
   BillsIdContributeRoute: BillsIdContributeRoute,
 }
 export const routeTree = rootRouteImport

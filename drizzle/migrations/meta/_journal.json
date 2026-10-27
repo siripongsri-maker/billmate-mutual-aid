@@ -15,6 +15,20 @@
       "when": 1793024150131,
       "tag": "0001_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793059360768,
+      "tag": "0002_privacy_aggregate_analytics",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793059466500,
+      "tag": "0003_restrict_analytics_default_grants",
+      "breakpoints": true
     }
   ]
 }
