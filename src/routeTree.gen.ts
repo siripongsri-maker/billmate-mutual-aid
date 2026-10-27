@@ -32,6 +32,8 @@ import { Route as CirclesIndexRouteImport } from './routes/circles.index'
 import { Route as CirclesIdRouteImport } from './routes/circles.$id'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsNewRouteImport } from './routes/requests.new'
+import { Route as SCodeRouteImport } from './routes/s.$code'
+import { Route as ApiPublicShareEventRouteImport } from './routes/api/public/share-event'
 import { Route as ApiPublicTrafficRouteImport } from './routes/api/public/traffic'
 import { Route as BillsIdContributeRouteImport } from './routes/bills.$id_.contribute'
 
@@ -150,6 +152,16 @@ const RequestsNewRoute = RequestsNewRouteImport.update({
   path: '/requests/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SCodeRoute = SCodeRouteImport.update({
+  id: '/s/$code',
+  path: '/s/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicShareEventRoute = ApiPublicShareEventRouteImport.update({
+  id: '/api/public/share-event',
+  path: '/api/public/share-event',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTrafficRoute = ApiPublicTrafficRouteImport.update({
   id: '/api/public/traffic',
   path: '/api/public/traffic',
@@ -182,9 +194,11 @@ export interface FileRoutesByFullPath {
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/s/$code': typeof SCodeRoute
   '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
+  '/api/public/share-event': typeof ApiPublicShareEventRoute
   '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
 }
@@ -208,9 +222,11 @@ export interface FileRoutesByTo {
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/s/$code': typeof SCodeRoute
   '/admin': typeof AdminIndexRoute
   '/circles': typeof CirclesIndexRoute
   '/requests': typeof RequestsIndexRoute
+  '/api/public/share-event': typeof ApiPublicShareEventRoute
   '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/bills/$id/contribute': typeof BillsIdContributeRoute
 }
@@ -236,9 +252,11 @@ export interface FileRoutesById {
   '/bills/$id': typeof BillsIdRoute
   '/circles/$id': typeof CirclesIdRoute
   '/requests/new': typeof RequestsNewRoute
+  '/s/$code': typeof SCodeRoute
   '/admin/': typeof AdminIndexRoute
   '/circles/': typeof CirclesIndexRoute
   '/requests/': typeof RequestsIndexRoute
+  '/api/public/share-event': typeof ApiPublicShareEventRoute
   '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/bills/$id_/contribute': typeof BillsIdContributeRoute
 }
@@ -265,9 +283,11 @@ export interface FileRouteTypes {
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/s/$code'
     | '/admin/'
     | '/circles/'
     | '/requests/'
+    | '/api/public/share-event'
     | '/api/public/traffic'
     | '/bills/$id/contribute'
   fileRoutesByTo: FileRoutesByTo
@@ -291,9 +311,11 @@ export interface FileRouteTypes {
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/s/$code'
     | '/admin'
     | '/circles'
     | '/requests'
+    | '/api/public/share-event'
     | '/api/public/traffic'
     | '/bills/$id/contribute'
   id:
@@ -318,9 +340,11 @@ export interface FileRouteTypes {
     | '/bills/$id'
     | '/circles/$id'
     | '/requests/new'
+    | '/s/$code'
     | '/admin/'
     | '/circles/'
     | '/requests/'
+    | '/api/public/share-event'
     | '/api/public/traffic'
     | '/bills/$id_/contribute'
   fileRoutesById: FileRoutesById
@@ -342,8 +366,10 @@ export interface RootRouteChildren {
   BillsIdRoute: typeof BillsIdRoute
   CirclesIdRoute: typeof CirclesIdRoute
   RequestsNewRoute: typeof RequestsNewRoute
+  SCodeRoute: typeof SCodeRoute
   CirclesIndexRoute: typeof CirclesIndexRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
+  ApiPublicShareEventRoute: typeof ApiPublicShareEventRoute
   ApiPublicTrafficRoute: typeof ApiPublicTrafficRoute
   BillsIdContributeRoute: typeof BillsIdContributeRoute
 }
@@ -511,6 +537,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RequestsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/s/$code': {
+      id: '/s/$code'
+      path: '/s/$code'
+      fullPath: '/s/$code'
+      preLoaderRoute: typeof SCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/share-event': {
+      id: '/api/public/share-event'
+      path: '/api/public/share-event'
+      fullPath: '/api/public/share-event'
+      preLoaderRoute: typeof ApiPublicShareEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/traffic': {
       id: '/api/public/traffic'
       path: '/api/public/traffic'
@@ -563,8 +603,10 @@ const rootRouteChildren: RootRouteChildren = {
   BillsIdRoute: BillsIdRoute,
   CirclesIdRoute: CirclesIdRoute,
   RequestsNewRoute: RequestsNewRoute,
+  SCodeRoute: SCodeRoute,
   CirclesIndexRoute: CirclesIndexRoute,
   RequestsIndexRoute: RequestsIndexRoute,
+  ApiPublicShareEventRoute: ApiPublicShareEventRoute,
   ApiPublicTrafficRoute: ApiPublicTrafficRoute,
   BillsIdContributeRoute: BillsIdContributeRoute,
 }
