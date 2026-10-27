@@ -6,7 +6,7 @@ export function TrafficTracker() {
   useEffect(() => {
     if (!document.querySelector('script[data-traffic]')) {
       const script = document.createElement('script');
-      script.type = 'module'; script.src = '/traffic.js'; script.dataset.traffic = 'true';
+      script.type = 'module'; script.src = '/traffic.js'; script.dataset['traffic'] = 'true';
       document.head.appendChild(script);
     }
     window.dispatchEvent(new Event('traffic-route'));

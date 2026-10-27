@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { trafficInput } from '@/lib/traffic';
 
 export const Route = createFileRoute('/api/public/traffic')({
+  staticData: { sitemap: false },
   server: { handlers: { POST: async ({ request }) => {
     // A cookieless, same-origin write-only collector; no private reads or visitor identifiers.
     const origin = request.headers.get('origin');
