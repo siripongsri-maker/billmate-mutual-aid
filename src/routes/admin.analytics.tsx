@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getTraffic } from '@/lib/traffic.functions';
 import { trafficSummary } from '@/lib/traffic';
 import { pageTitle } from '@/lib/brand';
+import { ShareLinksPanel } from '@/components/ShareLinksPanel';
 
 export const Route = createFileRoute('/admin/analytics')({
   staticData: { sitemap: false },
@@ -33,6 +34,7 @@ function Analytics() {
       <section className="border-t border-border pt-6"><h3 className="text-lg font-semibold">เปิดหน้ารายวัน</h3><div className="mt-4 overflow-x-auto"><div className="flex h-40 min-w-full items-end gap-2" role="img" aria-label="ยอดเปิดหน้ารายวัน">{Array.from({length:days},(_,i) => { const date = new Date(`${query.data.today}T00:00:00Z`);date.setUTCDate(date.getUTCDate()-days+1+i);const key=date.toISOString().slice(0,10);const count=totals.daily.find(d=>d.label===key)?.count ?? 0;const max=Math.max(...totals.daily.map(d=>d.count),1);return <div className="flex h-full min-w-2 flex-1 flex-col justify-end" key={key} title={`${key}: ${count} ครั้ง`}><svg viewBox="0 0 10 100" preserveAspectRatio="none" className="h-full w-full text-primary" aria-hidden="true"><rect x="0" y={100-count/max*100} width="10" height={Math.max(count/max*100,1)} fill="currentColor"/></svg></div>;})}</div></div><div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>{days} วันล่าสุด</span><span>วันนี้ · {query.data.today}</span></div></section>
       <div className="grid gap-8 lg:grid-cols-2"><Ranking title="แหล่งที่มา" rows={totals.sources} total={totals.visits}/><Ranking title="หน้ายอดนิยม" rows={totals.pages} total={totals.views}/></div>
     </>}
+    <ShareLinksPanel days={days}/>
     <aside className="flex gap-3 border-t border-border pt-5 text-sm text-muted-foreground"><ShieldCheck size={20} className="shrink-0 text-primary"/><div className="space-y-2"><p>นับเป็นครั้ง ไม่ใช่จำนวนคน และการกดช่วยไม่ใช่ยอดเงินหรือการชำระสำเร็จ</p><p>เก็บเฉพาะยอดรวมรายวัน 90 วัน ไม่เก็บชื่อ IP รหัสผู้เข้าชม ข้อมูลบิล ข้อความ หรือ URL เต็ม ไม่มีคุกกี้ติดตาม และไม่ส่งสถิติเมื่อเปิด Do Not Track / Global Privacy Control</p><p>ยอดเก่าเกิน 90 วันไม่แสดง และลบเมื่อมีการนับครั้งถัดไป แหล่งที่มาอาจไม่ครบเมื่อเบราว์เซอร์ไม่ส่งข้อมูลอ้างอิง</p></div></aside>
   </section>;
 }

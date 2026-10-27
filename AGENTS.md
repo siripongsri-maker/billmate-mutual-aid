@@ -19,3 +19,4 @@
 - AI story drafting uses an authenticated server function with validated input, explicit consent, no app persistence, and editable output; keep real details out of demo storage and public fundraising.
 - The standalone request page links to a TanStack drafting route; AI SDK imports stay inside server handlers so secrets and SDK runtime never enter browser bundles.
 - Traffic analytics uses a cookieless same-origin write-only collector and daily category counters; authenticated reads require protected user_roles, so user-editable profiles cannot grant analytics access. Existing staff roles are backfilled only by migration; grant future analytics staff through protected role administration.
+- Channel shares use public /s/$code destinations for the existing fictional bill/circle catalog, separate from legacy redirects; codes identify destination/channel rather than visitors, and only protected analytics staff can create links or read daily engagement totals.
