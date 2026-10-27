@@ -33,7 +33,7 @@ export const getShareStats = createServerFn({method:'POST'}).middleware([require
   return {links:(links.data??[]) as ShareLink[],counts:(counts.data??[]) as ShareCount[]};
 });
 export const resolveShareLink = createServerFn({method:'GET'}).inputValidator((v:unknown)=>shareCode.parse(v)).handler(async({data:code})=>{
-  const key=process.env['SUPABASE_ANON_KEY'];const url=process.env['SUPABASE_URL'];
+  const key=process.env['SUPABASE_PUBLISHABLE_KEY'] ?? process.env['SUPABASE_ANON_KEY'] ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;const url=process.env['SUPABASE_URL'];
   if(!key || !url)throw new Error('Share links unavailable');
   const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input,init)=>{const h=new Headers(init?.headers);if(key.startsWith('sb_') && h.get('Authorization')===`Bearer ${key}`)h.delete('Authorization');h.set('apikey',key);return fetch(input,{...init,headers:h});}}});
   const {data,error}=await client.from('share_links').select('code,kind,target_id,channel').eq('code',code).maybeSingle();
